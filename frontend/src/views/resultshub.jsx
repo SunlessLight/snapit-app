@@ -64,7 +64,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                             // Note: Change 'jpeg' to 'png' if your background processor returns PNGs
                             aiImageSrc = hasDataPrefix
                                 ? aiOutput.generatedImageBase64
-                                : `data:image/jpeg;base64,${aiOutput.generatedImageBase64}`;
+                                : `data:image/png;base64,${aiOutput.generatedImageBase64}`;
                         } else {
                             // Fallback just in case you still have older data using imageUrl
                             aiImageSrc = aiOutput?.imageUrl;
@@ -72,6 +72,18 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
                         const imgUrl = isOriginal ? mediaState.url : aiImageSrc;
                         const hasImg = !!imgUrl;
+
+                        const handleDownload = (url, label) => {
+                            if (!url) return;
+                            const link = document.createElement('a');
+                            link.href = url;
+                            // Clean up the label to make a nice filename (e.g., "Your Photo" -> "your_photo.png")
+                            const fileName = label.toLowerCase().replace(/\s+/g, '_');
+                            link.download = `snapit_${fileName}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        };
 
                         return (
                             <div key={visual.id} className="snap-center shrink-0 w-64 bg-white rounded-2xl shadow-md p-3 flex flex-col gap-3">
@@ -101,6 +113,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
                                 <button
                                     disabled={!hasImg}
+                                    onClick={() => handleDownload(imgUrl, visual.label)}
                                     className={`w-full flex items-center justify-center gap-2 text-lg py-3 rounded-lg shadow-md font-bold mt-auto transition-colors ${!hasImg ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-emerald-700 hover:bg-emerald-50'}`}
                                 >
                                     <Download size={18} /> {isEN ? "Save Image" : "Simpan Gambar"}

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import WelcomeScreen from './views/welcomescreen'
 import DashboardView from './views/dashboard';
 import MediaEditorView from './views/mediaeditor';
 import ContextConfigurationView from './views/contextconfiguration';
@@ -14,8 +15,7 @@ const DEFAULT_MEDIA_STATE = {
   contrast: 50,
   saturation: 50,
   isEnhanced: false
-
-}
+};
 
 const DEFAULT_MARKETING_CONFIG = { price: "", outputLanguage: "Bahasa Melayu", tone: "Casual Manglish", posterStyle: "Bold Promo" };
 const DEFAULT_AI_OUTPUT = {
@@ -25,7 +25,8 @@ const DEFAULT_AI_OUTPUT = {
 };
 
 export default function App() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [userName, setUserName] = useState(' ');
   const [appUILanguage, setAppUILanguage] = useState("EN");
 
   const [mediaState, setMediaState] = useState(DEFAULT_MEDIA_STATE);
@@ -35,10 +36,9 @@ export default function App() {
   const nextStep = useCallback(() => setCurrentStep((prev) => Math.min(prev + 1, 5)), []);
   const prevStep = useCallback(() => setCurrentStep((prev) => Math.max(prev - 1, 1)), []);
 
-  const cleanupUrls = useCallback((images) => {
-    images.forEach(img => {
-      if (img.url) URL.revokeObjectURL(img.url);
-    });
+  const handleStart = useCallback((name) => {
+    setUserName(name);
+    setCurrentStep(1);
   }, []);
 
   const handleImageSelect = useCallback((file, previewUrl) => {
@@ -58,52 +58,47 @@ export default function App() {
     });
   }, []);
 
-  const handleProceedToEditor = useCallback(() => {
-    setMediaState(prev => {
-      const firstFilledIndex = prev.images.findIndex(img => img.file !== null);
-      return { ...prev, selectedSlot: firstFilledIndex !== -1 ? firstFilledIndex : 0 };
-    });
-    nextStep();
-  }, [nextStep]);
-
   const handleStartOver = useCallback(() => {
     setMediaState(prev => {
-      cleanupUrls(prev.images);
+      // Direct cleanup of the single URL
+      if (prev.url) URL.revokeObjectURL(prev.url);
       return DEFAULT_MEDIA_STATE;
     });
     setMarketingConfig(DEFAULT_MARKETING_CONFIG);
     setAiOutput(DEFAULT_AI_OUTPUT);
     setCurrentStep(1);
-  }, [cleanupUrls]);
+  }, []);
 
-  // REFACTORED: Safe memory leak prevention without destroying active state
-  const activeUrls = useRef([]);
+  const activeUrl = useRef(null);
   useEffect(() => {
-    // Silently update the ref tracking active URLs whenever state changes
-    activeUrls.current = mediaState.images.map(img => img.url).filter(Boolean);
-  }, [mediaState.images]);
+    activeUrl.current = mediaState.url;
+  }, [mediaState.url]);
 
   useEffect(() => {
-    // Only fire revocation on hard unmount
     return () => {
-      activeUrls.current.forEach(url => URL.revokeObjectURL(url));
+      if (activeUrl.current) URL.revokeObjectURL(activeUrl.current);
     };
   }, []);
 
   const renderView = () => {
     switch (currentStep) {
+      case 0:
+        return <WelcomeScreen onStart={handleStart} />;
+
       case 1:
-        return <DashboardView appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={handleProceedToEditor} />;
+        // We can pass nextStep directly since we removed the array index wrapper
+        return <DashboardView appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
       case 2:
         return <MediaEditorView appUILanguage={appUILanguage} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
       case 3:
         return <ContextConfigurationView appUILanguage={appUILanguage} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
       case 4:
-        return <ProcessingScreen appUILanguage={appUILanguage} onComplete={nextStep} />;
+        // Added the missing props so the component can read the form data
+        return <ProcessingScreen appUILanguage={appUILanguage} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={nextStep} onPrev={prevStep} />;
       case 5:
         return <ResultsHubView appUILanguage={appUILanguage} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
       default:
-        return <DashboardView appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={handleProceedToEditor} />;
+        return <DashboardView appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
     }
   };
 
