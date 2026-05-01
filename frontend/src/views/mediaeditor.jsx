@@ -43,7 +43,7 @@ async function getCroppedImg(imageElement, cropConfig) {
 }
 
 export default function MediaEditorView({ appUILanguage, mediaState, setMediaState, onNext, onPrev }) {
-    const [cachedValues, setCachedValues] = useState({ 0: null, 1: null, 2: null });
+    const [cachedValues, setCachedValues] = useState(null);
     const [isProcessingCrop, setIsProcessingCrop] = useState(false);
 
     const isEN = appUILanguage === "EN";
@@ -52,51 +52,39 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
     const [completedCrop, setCompletedCrop] = useState(null);
     const imgRef = useRef(null);
 
-    const activeSlotIndex = mediaState.selectedSlot;
-    const activeImg = mediaState.images[activeSlotIndex];
+    const activeImg = mediaState;
     const hasImage = !!activeImg.url;
 
     const handleAutoEnhance = () => {
         if (!hasImage) return;
 
         if (!activeImg.isEnhanced) {
-            if (!cachedValues[activeSlotIndex]) {
-                setCachedValues(prev => ({
-                    ...prev,
-                    [activeSlotIndex]: { b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation }
-                }));
-            }
-            setMediaState(prev => {
-                const newImages = [...prev.images];
-                newImages[activeSlotIndex] = { ...newImages[activeSlotIndex], brightness: 65, contrast: 70, saturation: 75, isEnhanced: true };
-                return { ...prev, images: newImages };
-            });
+            // Save current values to the single cache
+            setCachedValues({ b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation });
+
+            // Apply enhancements directly to prev state
+            setMediaState(prev => ({
+                ...prev, brightness: 65, contrast: 70, saturation: 75, isEnhanced: true
+            }));
         } else {
-            const cache = cachedValues[activeSlotIndex];
-            setMediaState(prev => {
-                const newImages = [...prev.images];
-                newImages[activeSlotIndex] = { ...newImages[activeSlotIndex], brightness: cache.b, contrast: cache.c, saturation: cache.s, isEnhanced: false };
-                return { ...prev, images: newImages };
-            });
-            setCachedValues(prev => ({ ...prev, [activeSlotIndex]: null }));
+            // Restore from the single cache
+            setMediaState(prev => ({
+                ...prev, brightness: cachedValues.b, contrast: cachedValues.c, saturation: cachedValues.s, isEnhanced: false
+            }));
+            setCachedValues(null);
         }
     };
 
     const handleSliderChange = (key, value) => {
         if (!hasImage) return;
-        setMediaState(prev => {
-            const newImages = [...prev.images];
-            newImages[activeSlotIndex] = { ...newImages[activeSlotIndex], [key]: Number(value), isEnhanced: false };
-            return { ...prev, images: newImages };
-        });
+        setMediaState(prev => ({ ...prev, [key]: Number(value), isEnhanced: false }));
     };
 
     const onImageLoad = (e) => {
         const { width, height } = e.currentTarget;
-        setCrop(centerAspectCrop(width, height, 1));
+        setCrop(centerAspectCrop(width, height, 4 / 5));
     };
 
-    // REFACTORED: The function that executes the physical crop creation
     const handleApplyCrop = async () => {
         if (!completedCrop || !imgRef.current) {
             setIsCropMode(false);
@@ -109,20 +97,13 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
             const newUrl = URL.createObjectURL(newBlob);
 
             setMediaState(prev => {
-                const newImages = [...prev.images];
-                const oldUrl = newImages[activeSlotIndex].url;
-
-                newImages[activeSlotIndex] = {
-                    ...newImages[activeSlotIndex],
-                    file: newBlob,
-                    url: newUrl
-                };
-
                 // Clean up the old, uncropped memory footprint
-                if (oldUrl) URL.revokeObjectURL(oldUrl);
+                if (prev.url) URL.revokeObjectURL(prev.url);
 
-                return { ...prev, images: newImages };
+                // Directly overwrite file and url
+                return { ...prev, file: newBlob, url: newUrl };
             });
+
             setIsCropMode(false);
         } catch (err) {
             console.error("Failed to crop image:", err);
@@ -140,33 +121,21 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                     <ArrowLeft size={24} />
                 </button>
 
-                <div className="flex gap-4 overflow-x-auto snap-x flex-1 ml-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    {[0, 1, 2].map((slot) => {
-                        const thumbImg = mediaState.images[slot];
-                        return (
-                            <button
-                                key={slot}
-                                onClick={() => { setMediaState(prev => ({ ...prev, selectedSlot: slot })); setIsCropMode(false); }}
-                                className={`snap-center shrink-0 w-16 h-16 rounded-2xl shadow-md flex items-center justify-center transition-all bg-white overflow-hidden ${activeSlotIndex === slot ? 'border-4 border-emerald-600' : 'border-2 border-transparent opacity-70 hover:opacity-100'}`}
-                            >
-                                {thumbImg.url ? (
-                                    <img src={thumbImg.url} alt={`Slot ${slot + 1}`} className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className={`p-2 rounded-full ${activeSlotIndex === slot ? 'bg-emerald-600' : 'bg-emerald-600/30'}`}>
-                                        <ImageIcon className="w-6 h-6 text-white" />
-                                    </div>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
+                {/* Optional: Add a simple title here to fill the empty space left by the removed thumbnails */}
+                <span className="text-xl font-bold text-gray-800">
+                    {isEN ? "Edit Image" : "Sunting Gambar"}
+                </span>
+
+                {/* Invisible spacer to keep the title perfectly centered via flexbox */}
+                <div className="w-12 h-12"></div>
+
             </div>
 
             <div className="flex-1 w-full bg-white rounded-2xl shadow-md mb-6 flex flex-col items-center justify-center relative overflow-hidden min-h-[300px]">
                 {hasImage ? (
                     isCropMode ? (
                         <div className={`transition-opacity ${isProcessingCrop ? 'opacity-50' : 'opacity-100'}`}>
-                            <ReactCrop crop={crop} onChange={(_, percentCrop) => setCrop(percentCrop)} onComplete={(c) => setCompletedCrop(c)} aspect={1} className="max-h-full">
+                            <ReactCrop crop={crop} onChange={(_, percentCrop) => setCrop(percentCrop)} onComplete={(c) => setCompletedCrop(c)} aspect={4 / 5} className="max-h-full">
                                 <img ref={imgRef} src={activeImg.url} alt="Crop Preview" onLoad={onImageLoad} className="max-h-[50vh] w-auto object-contain" />
                             </ReactCrop>
                         </div>

@@ -5,10 +5,8 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
     const isEN = appUILanguage === "EN";
 
     const exportedVisuals = [
-        { id: 1, type: 'image', label: isEN ? 'Edited Photo 1' : 'Gambar 1', aspectRatio: 'aspect-square', index: 0 },
-        { id: 2, type: 'image', label: isEN ? 'Edited Photo 2' : 'Gambar 2', aspectRatio: 'aspect-square', index: 1 },
-        { id: 3, type: 'image', label: isEN ? 'Edited Photo 3' : 'Gambar 3', aspectRatio: 'aspect-square', index: 2 },
-        { id: 4, type: 'poster', label: isEN ? 'Promo Poster' : 'Poster Promo', aspectRatio: 'aspect-[9/16]', index: null },
+        { id: 1, type: 'edited', label: isEN ? 'Original' : 'Original', aspectRatio: 'aspect-[4/5]' },
+        { id: 2, type: 'ai_enhanced', label: isEN ? 'Enhanced' : 'Baharu', aspectRatio: 'aspect-[4/5]' },
     ];
 
     const handleUpdate = (key, value) => setAiOutput(prev => ({ ...prev, [key]: value }));
@@ -55,37 +53,55 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
             <section className="mb-6">
                 <div className="flex overflow-x-auto gap-4 px-6 pb-6 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     {exportedVisuals.map((visual) => {
-                        // REFACTORED: Map the specific image state based on index
-                        const imgData = visual.type === 'image' ? mediaState.images[visual.index] : null;
-                        const hasImg = imgData && imgData.url;
+                        const isOriginal = visual.type === 'edited';
+                        let aiImageSrc = null;
+
+                        if (aiOutput?.generatedImageBase64) {
+                            // 2. Check if the backend already included the data URI prefix.
+                            // If it didn't, we prepend it so the <img> tag can read it.
+                            const hasDataPrefix = aiOutput.generatedImageBase64.startsWith('data:image');
+
+                            // Note: Change 'jpeg' to 'png' if your background processor returns PNGs
+                            aiImageSrc = hasDataPrefix
+                                ? aiOutput.generatedImageBase64
+                                : `data:image/jpeg;base64,${aiOutput.generatedImageBase64}`;
+                        } else {
+                            // Fallback just in case you still have older data using imageUrl
+                            aiImageSrc = aiOutput?.imageUrl;
+                        }
+
+                        const imgUrl = isOriginal ? mediaState.url : aiImageSrc;
+                        const hasImg = !!imgUrl;
 
                         return (
                             <div key={visual.id} className="snap-center shrink-0 w-64 bg-white rounded-2xl shadow-md p-3 flex flex-col gap-3">
                                 <div className={`w-full ${visual.aspectRatio} bg-gray-200 rounded-2xl flex flex-col items-center justify-center text-gray-500 overflow-hidden relative`}>
-                                    {visual.type === 'image' && hasImg ? (
+                                    {hasImg ? (
                                         <>
-                                            <img src={imgData.url} alt="Edited preview" className="w-full h-full object-cover" />
-                                            <div
-                                                className="absolute inset-0 pointer-events-none"
-                                                style={{
-                                                    backgroundColor: `rgba(255, 255, 255, ${(imgData.brightness - 50) / 200})`,
-                                                    mixBlendMode: 'overlay',
-                                                    backdropFilter: `contrast(${imgData.contrast / 50}) saturate(${imgData.saturation / 50})`,
-                                                    WebkitBackdropFilter: `contrast(${imgData.contrast / 50}) saturate(${imgData.saturation / 50})`
-                                                }}
-                                            />
+                                            <img src={imgUrl} alt={visual.label} className="w-full h-full object-cover" />
+
+                                            {/* 2. Conditionally apply CSS filters ONLY to the original image */}
+                                            {isOriginal && (
+                                                <div
+                                                    className="absolute inset-0 pointer-events-none"
+                                                    style={{
+                                                        backgroundColor: `rgba(255, 255, 255, ${(mediaState.brightness - 50) / 200})`,
+                                                        mixBlendMode: 'overlay',
+                                                        backdropFilter: `contrast(${mediaState.contrast / 50}) saturate(${mediaState.saturation / 50})`,
+                                                        WebkitBackdropFilter: `contrast(${mediaState.contrast / 50}) saturate(${mediaState.saturation / 50})`
+                                                    }}
+                                                />
+                                            )}
                                         </>
                                     ) : (
-                                        <>
-                                            {visual.type === 'poster' ? <FileText size={48} /> : <ImageIcon size={48} className="opacity-30" />}
-                                        </>
+                                        <ImageIcon size={48} className="opacity-30" />
                                     )}
                                 </div>
                                 <span className="mt-2 text-lg font-bold text-center">{visual.label}</span>
 
                                 <button
-                                    disabled={visual.type === 'image' && !hasImg}
-                                    className={`w-full flex items-center justify-center gap-2 text-lg py-3 rounded-lg shadow-md font-bold mt-auto transition-colors ${visual.type === 'image' && !hasImg ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-emerald-700 hover:bg-emerald-50'}`}
+                                    disabled={!hasImg}
+                                    className={`w-full flex items-center justify-center gap-2 text-lg py-3 rounded-lg shadow-md font-bold mt-auto transition-colors ${!hasImg ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-emerald-700 hover:bg-emerald-50'}`}
                                 >
                                     <Download size={18} /> {isEN ? "Save Image" : "Simpan Gambar"}
                                 </button>

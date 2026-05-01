@@ -23,7 +23,7 @@ export default function ProcessingScreen({
     const currentTexts = isEN ? LOADING_TEXTS.EN : LOADING_TEXTS.MY;
 
     // HIGH SEVERITY FIX: Extract primitives to ensure referential stability and avoid stale closures
-    const selectedFile = mediaState?.images?.[mediaState?.selectedSlot]?.file || null;
+    const selectedFile = mediaState.file || null;
     const price = marketingConfig?.price || "";
     const outputLanguage = marketingConfig?.outputLanguage || "";
     const tone = marketingConfig?.tone || "";
