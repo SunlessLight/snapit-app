@@ -1,16 +1,14 @@
-// FIX: Imported ArrowLeft
 import React from 'react';
 import { Share2, Download, Image as ImageIcon, FileText, RotateCcw, ArrowLeft } from 'lucide-react';
 
-// FIX: Wired the onPrev prop
 export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, setAiOutput, onStartOver, onPrev }) {
     const isEN = appUILanguage === "EN";
 
     const exportedVisuals = [
-        { id: 1, type: 'image', label: isEN ? 'Edited Photo 1' : 'Gambar 1', aspectRatio: 'aspect-square' },
-        { id: 2, type: 'image', label: isEN ? 'Edited Photo 2' : 'Gambar 2', aspectRatio: 'aspect-square' },
-        { id: 3, type: 'image', label: isEN ? 'Edited Photo 3' : 'Gambar 3', aspectRatio: 'aspect-square' },
-        { id: 4, type: 'poster', label: isEN ? 'Promo Poster' : 'Poster Promo', aspectRatio: 'aspect-[9/16]' },
+        { id: 1, type: 'image', label: isEN ? 'Edited Photo 1' : 'Gambar 1', aspectRatio: 'aspect-square', index: 0 },
+        { id: 2, type: 'image', label: isEN ? 'Edited Photo 2' : 'Gambar 2', aspectRatio: 'aspect-square', index: 1 },
+        { id: 3, type: 'image', label: isEN ? 'Edited Photo 3' : 'Gambar 3', aspectRatio: 'aspect-square', index: 2 },
+        { id: 4, type: 'poster', label: isEN ? 'Promo Poster' : 'Poster Promo', aspectRatio: 'aspect-[9/16]', index: null },
     ];
 
     const handleUpdate = (key, value) => setAiOutput(prev => ({ ...prev, [key]: value }));
@@ -22,8 +20,6 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
     return (
         <div className="min-h-screen bg-amber-50 pb-40 text-gray-800 relative">
-
-            {/* FIX: Added Header with Back Navigation to resolve the UI trap */}
             <header className="px-6 pt-6 relative flex items-center justify-center">
                 <button onClick={onPrev} className="absolute left-6 p-3 bg-white rounded-full shadow-md text-gray-800 hover:bg-gray-100 transition-colors">
                     <ArrowLeft size={24} />
@@ -58,35 +54,44 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
             <section className="mb-6">
                 <div className="flex overflow-x-auto gap-4 px-6 pb-6 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    {exportedVisuals.map((visual) => (
-                        <div key={visual.id} className="snap-center shrink-0 w-64 bg-white rounded-2xl shadow-md p-3 flex flex-col gap-3">
-                            <div className={`w-full ${visual.aspectRatio} bg-gray-200 rounded-2xl flex flex-col items-center justify-center text-gray-500 overflow-hidden relative`}>
-                                {visual.type === 'image' && mediaState?.imagePreviewUrl ? (
-                                    <>
-                                        <img src={mediaState.imagePreviewUrl} alt="Edited preview" className="w-full h-full object-cover" />
-                                        <div
-                                            className="absolute inset-0 pointer-events-none"
-                                            style={{
-                                                backgroundColor: `rgba(255, 255, 255, ${(mediaState.brightness - 50) / 200})`,
-                                                mixBlendMode: 'overlay',
-                                                backdropFilter: `contrast(${mediaState.contrast / 50}) saturate(${mediaState.saturation / 50})`,
-                                                WebkitBackdropFilter: `contrast(${mediaState.contrast / 50}) saturate(${mediaState.saturation / 50})`
-                                            }}
-                                        />
-                                    </>
-                                ) : (
-                                    <>
-                                        {visual.type === 'poster' ? <FileText size={48} /> : <ImageIcon size={48} />}
-                                    </>
-                                )}
-                            </div>
-                            <span className="mt-2 text-lg font-bold text-center">{visual.label}</span>
+                    {exportedVisuals.map((visual) => {
+                        // REFACTORED: Map the specific image state based on index
+                        const imgData = visual.type === 'image' ? mediaState.images[visual.index] : null;
+                        const hasImg = imgData && imgData.url;
 
-                            <button className="w-full flex items-center justify-center gap-2 bg-white text-emerald-700 text-lg py-3 rounded-lg shadow-md font-bold mt-auto">
-                                <Download size={18} /> {isEN ? "Save Image" : "Simpan Gambar"}
-                            </button>
-                        </div>
-                    ))}
+                        return (
+                            <div key={visual.id} className="snap-center shrink-0 w-64 bg-white rounded-2xl shadow-md p-3 flex flex-col gap-3">
+                                <div className={`w-full ${visual.aspectRatio} bg-gray-200 rounded-2xl flex flex-col items-center justify-center text-gray-500 overflow-hidden relative`}>
+                                    {visual.type === 'image' && hasImg ? (
+                                        <>
+                                            <img src={imgData.url} alt="Edited preview" className="w-full h-full object-cover" />
+                                            <div
+                                                className="absolute inset-0 pointer-events-none"
+                                                style={{
+                                                    backgroundColor: `rgba(255, 255, 255, ${(imgData.brightness - 50) / 200})`,
+                                                    mixBlendMode: 'overlay',
+                                                    backdropFilter: `contrast(${imgData.contrast / 50}) saturate(${imgData.saturation / 50})`,
+                                                    WebkitBackdropFilter: `contrast(${imgData.contrast / 50}) saturate(${imgData.saturation / 50})`
+                                                }}
+                                            />
+                                        </>
+                                    ) : (
+                                        <>
+                                            {visual.type === 'poster' ? <FileText size={48} /> : <ImageIcon size={48} className="opacity-30" />}
+                                        </>
+                                    )}
+                                </div>
+                                <span className="mt-2 text-lg font-bold text-center">{visual.label}</span>
+
+                                <button
+                                    disabled={visual.type === 'image' && !hasImg}
+                                    className={`w-full flex items-center justify-center gap-2 text-lg py-3 rounded-lg shadow-md font-bold mt-auto transition-colors ${visual.type === 'image' && !hasImg ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-emerald-700 hover:bg-emerald-50'}`}
+                                >
+                                    <Download size={18} /> {isEN ? "Save Image" : "Simpan Gambar"}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
             </section>
 
