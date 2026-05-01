@@ -87,18 +87,18 @@ export default function App() {
 
       case 1:
         // We can pass nextStep directly since we removed the array index wrapper
-        return <DashboardView appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
+        return <DashboardView userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
       case 2:
-        return <MediaEditorView appUILanguage={appUILanguage} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
+        return <MediaEditorView userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
       case 3:
-        return <ContextConfigurationView appUILanguage={appUILanguage} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
+        return <ContextConfigurationView userName={userName} appUILanguage={appUILanguage} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
       case 4:
         // Added the missing props so the component can read the form data
-        return <ProcessingScreen appUILanguage={appUILanguage} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={nextStep} onPrev={prevStep} />;
+        return <ProcessingScreen userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={nextStep} onPrev={prevStep} />;
       case 5:
-        return <ResultsHubView appUILanguage={appUILanguage} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
+        return <ResultsHubView userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
       default:
-        return <DashboardView appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
+        return <DashboardView userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
     }
   };
 
