@@ -94,138 +94,146 @@ export default function DashboardView({ userName, appUILanguage, setAppUILanguag
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col pt-8 pb-12 px-6 md:px-12 max-w-6xl mx-auto w-full overflow-x-hidden">
+        <div className="h-[100dvh] overflow-y-auto bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col py-3 md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
 
-            {/* Header: Logo & User Profile */}
-            <header className="flex items-center justify-between mb-8 md:mb-12">
-                <div className="flex items-center gap-3">
-                    <img src={snapitLogo} alt="SnapIT" className="w-24 h-24 object-contain" />
-                    <div className="hidden sm:block">
-                        <p className="text-sm opacity-70">Photos, elevated.</p>
+            <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0">
+                {/* Header - Margins tightened for mobile */}
+                <header className="flex items-center justify-between mb-3 md:mb-8 flex-shrink-0">
+                    <div className="flex items-center gap-2 md:gap-3">
+                        <img src={snapitLogo} alt="SnapIT" className="w-24 h-16 md:w-24 md:h-24 object-contain" />
+                        <div className="hidden sm:block">
+                            <p className="text-sm opacity-70">Photos, elevated.</p>
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                    <span className="font-semibold text-sm pl-2">{userName || "Guest"}</span>
-                    <div className="w-8 h-8 rounded-full bg-[#dc2626] text-white flex items-center justify-center shadow-inner">
-                        <User size={16} />
+                    <div className="flex items-center gap-2 md:gap-3 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                        <span className="font-semibold text-sm pl-1 md:pl-2">{userName || "Guest"}</span>
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#dc2626] text-white flex items-center justify-center shadow-inner">
+                            <User size={12} />
+                        </div>
                     </div>
-                </div>
-            </header>
+                </header>
 
-            {/* Timeline Bar */}
-            <TimelineBar currentStep={1} />
-
-            {/* Main Content Area */}
-            <section className="flex-1 flex flex-col justify-center animate-fade-in">
-
-                {/* Hero Text */}
-                <div className="text-center mb-8">
-                    <h2 className="font-serif text-3xl md:text-5xl font-extrabold mb-3">Drop a photo in.</h2>
-                    <p className="opacity-70 max-w-lg mx-auto">We'll polish it and turn it into something worth sharing.</p>
+                {/* Timeline Bar - Margins tightened */}
+                <div className="mb-3 md:mb-8 flex-shrink-0">
+                    <TimelineBar currentStep={1} />
                 </div>
 
-                {/* Drop Zone Box */}
-                <div className="w-full max-w-2xl mx-auto relative group">
-                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                {/* Main Content Area */}
+                <section className="flex-1 flex flex-col w-full min-h-0 animate-fade-in pb-2 md:pb-4">
 
-                    <div
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onClick={() => !isProcessing && !hasImage && fileInputRef.current.click()}
-                        className={`border-[2.5px] border-dashed rounded-3xl p-8 md:p-16 text-center transition-all bg-white relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]
-                            ${isDragging ? 'border-[#dc2626] bg-red-50/30' : 'border-[#e5c5bf]'}
-                            ${hasImage ? 'border-solid border-gray-200 p-4' : 'cursor-pointer hover:border-[#dc2626] hover:bg-red-50/10'}
-                        `}
-                    >
-                        {isProcessing ? (
-                            <div className="flex flex-col items-center gap-4 text-[#dc2626]">
-                                <Loader2 className="w-10 h-10 animate-spin" />
-                                <span className="font-semibold text-sm animate-pulse tracking-wide uppercase">Processing File...</span>
-                            </div>
-                        ) : hasImage ? (
-                            <>
-                                <img src={mediaState.url} alt="Uploaded" className="w-full h-full object-contain rounded-2xl max-h-[400px]" />
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onImageRemove(); }}
-                                    className="absolute top-6 right-6 bg-white text-[#1a0f0d] hover:text-[#dc2626] rounded-full p-2.5 shadow-lg border border-gray-100 transition-transform hover:scale-105 z-10"
-                                >
-                                    <X size={20} strokeWidth={2.5} />
-                                </button>
-                            </>
+                    {/* Hero Text - Margins tightened */}
+                    <div className="text-center mb-3 md:mb-6 flex-shrink-0">
+                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">Drop a photo in.</h2>
+                        <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto hidden sm:block">We'll polish it and turn it into something worth sharing.</p>
+                    </div>
+
+                    {/* THE SHOCK ABSORBER: Drop Zone Box */}
+                    {/* FIX 2: flex-1 combined with a tiny min-h-[130px] allows it to stretch and shrink based on the phone screen size */}
+                    <div className="w-full max-w-2xl mx-auto flex flex-col flex-1 min-h-[130px] md:min-h-[300px]">
+                        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+
+                        <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            onClick={() => !isProcessing && !hasImage && fileInputRef.current.click()}
+                            // FIX 3: h-full forces the dashed box to expand to the edges of the shock absorber
+                            className={`w-full h-full flex-1 border-[2px] md:border-[2.5px] rounded-2xl md:rounded-3xl p-2 md:p-10 transition-all bg-white flex flex-col items-center justify-center relative overflow-hidden group
+                                ${isDragging ? 'border-[#dc2626] bg-red-50/30 border-dashed' : 'border-[#e5c5bf] border-dashed'}
+                                ${hasImage ? 'border-solid border-gray-200' : 'cursor-pointer md:hover:border-[#dc2626] md:hover:bg-red-50/10'}
+                            `}
+                        >
+                            {isProcessing ? (
+                                <div className="flex flex-col items-center gap-2 md:gap-3 text-[#dc2626]">
+                                    <Loader2 className="w-6 h-6 md:w-10 md:h-10 animate-spin" />
+                                    <span className="font-semibold text-xs md:text-sm animate-pulse tracking-wide uppercase">Processing...</span>
+                                </div>
+                            ) : hasImage ? (
+                                // FIX 4: max-h-full ensures a tall uploaded image doesn't blow out the flexible container
+                                <div className="relative w-full h-full flex items-center justify-center p-1 md:p-2">
+                                    <img src={mediaState.url} alt="Uploaded" className="max-w-full max-h-full object-contain rounded-xl md:rounded-2xl" />
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onImageRemove(); }}
+                                        className="absolute top-1 right-1 md:-top-2 md:-right-2 bg-white text-[#1a0f0d] hover:text-[#dc2626] rounded-full p-1.5 md:p-2.5 shadow-md border border-gray-100 transition-transform md:hover:scale-105 z-10"
+                                    >
+                                        <X size={16} strokeWidth={2.5} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="w-10 h-10 md:w-16 md:h-16 mx-auto rounded-xl md:rounded-2xl flex items-center justify-center mb-2 md:mb-5 bg-red-50 text-[#dc2626] md:group-hover:scale-110 transition-transform">
+                                        <UploadCloud size={24} className="md:w-8 md:h-8" />
+                                    </div>
+                                    <p className="font-serif text-xl font-semibold mb-1 hidden sm:block">Drag & drop your photo</p>
+                                    <p className="font-serif text-base font-semibold mb-2 sm:hidden">Tap to upload a photo</p>
+
+                                    <p className="text-xs md:text-sm opacity-60 mb-4 hidden sm:block">or click to browse — JPG, PNG, WEBP</p>
+                                    <span className="bg-[#dc2626] text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[10px] md:text-sm font-semibold inline-flex items-center gap-2 shadow-sm">
+                                        Choose photo
+                                    </span>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Privacy text moved here, tightly spaced */}
+                        <p className="text-center text-[9px] md:text-xs opacity-50 mt-1.5 md:mt-3 flex-shrink-0 hidden md:block">
+                            Your photo stays in your browser. Nothing is uploaded anywhere.
+                        </p>
+                    </div>
+
+                    {/* Pro Tips Carousel - Margins compressed */}
+                    <div className="w-full max-w-2xl mx-auto mt-3 md:mt-6 relative flex-shrink-0">
+
+                        <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory gap-2 md:gap-3 pb-1 md:pb-2 pt-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth">
+                            {PRO_TIPS?.map((tip) => {
+                                const Icon = tip.icon;
+                                return (
+                                    <div
+                                        key={tip.id}
+                                        className="snap-center shrink-0 w-[85%] sm:w-[280px] bg-white border border-gray-100 rounded-lg md:rounded-xl shadow-sm p-2 md:p-4 flex items-center gap-2 md:gap-3"
+                                    >
+                                        <div className="bg-red-50 text-[#dc2626] p-1.5 md:p-2 rounded-md md:rounded-lg flex-shrink-0">
+                                            <Icon className="w-3 h-3 md:w-5 md:h-5" strokeWidth={2.5} />
+                                        </div>
+                                        <p className="text-[10px] md:text-sm font-medium leading-tight text-gray-700 line-clamp-2">
+                                            {appUILanguage === "EN" ? tip.textEN : tip.textMS}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Bottom Actions - mt-auto pushes it down, but the compressed UI guarantees it stays on screen */}
+                    <div className="mt-3 md:mt-auto pt-1 md:pt-4 flex flex-col items-center gap-2 md:gap-4 flex-shrink-0">
+                        {hasImage && !isProcessing ? (
+                            <button
+                                onClick={onNext}
+                                className="bg-[#dc2626] w-full max-w-xs justify-center text-white px-6 md:px-8 py-3 md:py-3.5 rounded-full font-semibold flex items-center gap-2 hover:brightness-90 transition-all md:hover:-translate-y-1 shadow-[0_8px_20px_rgba(220,38,38,0.25)] text-sm md:text-lg"
+                            >
+                                Proceed to Enhance <ArrowRight size={18} />
+                            </button>
                         ) : (
                             <>
-                                <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5 bg-red-50 text-[#dc2626] group-hover:scale-110 transition-transform">
-                                    <UploadCloud size={32} />
+                                <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleFileChange} className="hidden" />
+                                <div className="flex flex-col items-center gap-1.5 md:gap-2">
+                                    <button
+                                        onClick={() => cameraInputRef.current.click()}
+                                        disabled={isProcessing}
+                                        className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-[#dc2626] border-4 border-white text-white flex items-center justify-center shadow-lg md:shadow-xl md:hover:scale-105 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Open Camera"
+                                    >
+                                        <Camera size={26} strokeWidth={2} className="md:w-8 md:h-8" />
+                                    </button>
+                                    <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">Take Photo</span>
                                 </div>
-                                <p className="font-serif text-xl font-semibold mb-1">Drag & drop your photo</p>
-                                <p className="text-sm opacity-60 mb-6">or click to browse — JPG, PNG, WEBP</p>
-                                <span className="bg-[#dc2626] text-white px-5 py-2.5 rounded-full text-sm font-semibold inline-flex items-center gap-2 shadow-sm">
-                                    Choose photo
-                                </span>
                             </>
                         )}
                     </div>
-                </div>
 
-                {/* Sub-text */}
-                {!hasImage && (
-                    <p className="text-center text-xs opacity-50 mt-6">
-                        Your photo stays in your browser. Nothing is uploaded anywhere.
-                    </p>
-                )}
-
-                {/* Pro Tips Carousel - Sleek & Horizontal */}
-                <div className="w-full max-w-2xl mx-auto mt-8 relative">
-                    <div
-                        ref={scrollRef}
-                        className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 pt-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth"
-                    >
-                        {PRO_TIPS.map((tip) => {
-                            const Icon = tip.icon;
-                            return (
-                                <div
-                                    key={tip.id}
-                                    className="snap-center shrink-0 w-[85%] sm:w-[280px] bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow p-4 flex items-center gap-4"
-                                >
-                                    <div className="bg-red-50 text-[#dc2626] p-2.5 rounded-xl flex-shrink-0">
-                                        <Icon className="w-5 h-5" strokeWidth={2.5} />
-                                    </div>
-                                    <p className="text-sm font-medium leading-tight text-gray-700 line-clamp-2">
-                                        {appUILanguage === "EN" ? tip.textEN : tip.textMS}
-                                    </p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Bottom Actions */}
-                <div className="mt-10 flex flex-col items-center gap-6">
-                    {hasImage && !isProcessing ? (
-                        <button
-                            onClick={onNext}
-                            className="bg-[#dc2626] text-white px-8 py-3.5 rounded-full font-semibold flex items-center gap-2 hover:brightness-90 transition-all hover:-translate-y-1 shadow-[0_8px_20px_rgba(220,38,38,0.25)] text-lg"
-                        >
-                            Proceed to Enhance <ArrowRight size={20} />
-                        </button>
-                    ) : (
-                        <>
-                            <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleFileChange} className="hidden" />
-                            <button
-                                onClick={() => cameraInputRef.current.click()}
-                                disabled={isProcessing}
-                                className="w-16 h-16 rounded-full bg-white border border-gray-200 text-[#1a0f0d] flex items-center justify-center shadow-sm hover:border-[#dc2626] hover:text-[#dc2626] transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Open Camera"
-                            >
-                                <Camera size={26} strokeWidth={2} />
-                            </button>
-                        </>
-                    )}
-                </div>
-
-            </section>
+                </section>
+            </div>
         </div>
     );
 }
