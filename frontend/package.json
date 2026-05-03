@@ -1,7 +1,7 @@
 {
   "name": "snapit-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^1.51.0",
+    "axios": "^1.15.2",
+    "busboy": "^1.6.0",
+    "dotenv": "^17.4.2",
+    "form-data": "^4.0.5",
     "framer-motion": "^12.38.0",
     "heic2any": "^0.0.4",
     "lucide-react": "^1.11.0",
