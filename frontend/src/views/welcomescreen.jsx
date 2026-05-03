@@ -26,10 +26,10 @@ export default function WelcomeScreen({ onStart }) {
                 </div>
 
                 <p className="text-lg opacity-70 mb-2 font-medium">
-                    Photos, elevated.
+                    Snap  .  Generate  .  Sell
                 </p>
                 <p className="text-sm opacity-60 mb-10">
-                    Turn your moments into stories with AI-powered captions.
+                    Instant captions and posters for your food business
                 </p>
 
                 <form onSubmit={handleSubmit} className="mb-6">

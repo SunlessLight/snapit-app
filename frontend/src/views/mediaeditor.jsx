@@ -1,23 +1,24 @@
 import React, { useState, useRef } from 'react';
-import { 
-    Sparkles, 
-    SlidersHorizontal, 
-    Crop as CropIcon, 
-    ArrowLeft, 
-    ArrowRight, 
-    X, 
-    Sun, 
-    Contrast, 
-    Droplets, 
-    Check, 
+import {
+    Sparkles,
+    SlidersHorizontal,
+    Crop as CropIcon,
+    ArrowLeft,
+    ArrowRight,
+    X,
+    Sun,
+    Contrast,
+    Droplets,
+    Check,
     User,
     RotateCcw
 } from 'lucide-react';
-import ReactCrop, {centerCrop, makeAspectCrop} from 'react-image-crop';
+import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
 import snapitLogo from '../assets/snapit-logo.png';
 import TimelineBar from './timelinebar';
+import Header from './header';
 
 // --- Helper Functions (Preserved from your backend logic) ---
 async function getCroppedImg(imageElement, cropConfig) {
@@ -62,7 +63,7 @@ function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
 export default function MediaEditorView({ userName, appUILanguage, mediaState, setMediaState, onNext, onPrev }) {
     // UI State Machine: 'DEFAULT' | 'ADJUST' | 'CROP'
     const [controlState, setControlState] = useState('DEFAULT');
-    
+
     // Logic States
     const [cachedValues, setCachedValues] = useState(null);
     const [isProcessingCrop, setIsProcessingCrop] = useState(false);
@@ -123,12 +124,12 @@ export default function MediaEditorView({ userName, appUILanguage, mediaState, s
     };
 
     const handleReset = () => {
-        setMediaState(prev => ({ 
-            ...prev, 
-            brightness: 50, 
-            contrast: 50, 
-            saturation: 50, 
-            isEnhanced: false 
+        setMediaState(prev => ({
+            ...prev,
+            brightness: 50,
+            contrast: 50,
+            saturation: 50,
+            isEnhanced: false
         }));
         setCachedValues(null);
     };
@@ -140,20 +141,19 @@ export default function MediaEditorView({ userName, appUILanguage, mediaState, s
     };
 
     return (
-        <div className="h-[100dvh] bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col py-4 md:py-8 px-4 md:px-12 max-w-6xl mx-auto w-full overflow-x-hidden">
-            
+        <div className="h-[100dvh] overflow-y-auto bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col py-3 md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
+
             <svg width="0" height="0" className="absolute">
                 <defs>
                     <linearGradient id="gemini-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4285F4" />   {/* Blue */}
-                        <stop offset="33%" stopColor="#9B72CB" />  {/* Purple */}
-                        <stop offset="66%" stopColor="#D96570" />  {/* Red */}
-                        <stop offset="100%" stopColor="#F4B400" /> {/* Yellow */}
+                        <stop offset="0%" stopColor="#4285F4" />
+                        <stop offset="33%" stopColor="#9B72CB" />
+                        <stop offset="66%" stopColor="#D96570" />
+                        <stop offset="100%" stopColor="#F4B400" />
                     </linearGradient>
                 </defs>
             </svg>
 
-            {/* Inject Custom CSS for the specific AI Pulse ring animation */}
             <style>{`
                 @keyframes aiShine {
                     0%, 100% { box-shadow: 0 0 8px rgba(155, 114, 203, 0.4); }
@@ -162,211 +162,199 @@ export default function MediaEditorView({ userName, appUILanguage, mediaState, s
                 .ai-shine-active { animation: aiShine 2s ease-in-out infinite; }
             `}</style>
 
-            {/* Header: Logo & User Profile (Mirrored from Dashboard) */}
-            <header className="flex items-center justify-between mb-2 md:mb-8 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                    <img src={snapitLogo} alt="SnapIT" className="w-16 h-16 md:w-24 md:h-24 object-contain" />
-                    <div className="hidden sm:block">
-                        <p className="text-sm opacity-70">Photos, elevated.</p>
-                    </div>
+            <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0">
+
+                {/* Header & Timeline - Margins compressed for mobile */}
+                <Header snapitLogo={snapitLogo} userName={userName} />
+                <div className="mb-3 md:mb-8 flex-shrink-0">
+                    <TimelineBar currentStep={2} />
                 </div>
 
-                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                    <span className="font-semibold text-sm pl-2">{userName || "Guest"}</span>
-                    <div className="w-8 h-8 rounded-full bg-[#dc2626] text-white flex items-center justify-center shadow-inner">
-                        <User size={16} />
-                    </div>
-                </div>
-            </header>
+                <section className="flex-1 flex flex-col justify-center animate-fade-in w-full min-h-0 max-w-3xl mx-auto pb-2 md:pb-4">
 
-            {/* Timeline Bar */}
-            <TimelineBar currentStep={2} />
-
-            {/* Main Content Area */}
-            <section className="flex-1 flex flex-col justify-center animate-fade-in w-full min-h-0 max-w-3xl mx-auto">
-                
-                {/* Hero Text */}
-                <div className="text-center mb-6 md:mb-8 flex-shrink-0">
-                    <h2 className="font-serif text-3xl md:text-5xl font-extrabold mb-1 md:mb-3">Let's make it pop.</h2>
-                    <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">
-                        {isEN ? "Toggle AI enhancement or manually adjust to perfection." : "Guna AI untuk mencantikkan gambar atau ubah secara manual."}
-                    </p>
-                </div>
-
-                {/* The Main Container Card */}
-                <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 flex-1 flex flex-col min-h-0 relative">
-                    
-                    {/* Top: Image Preview Zone */}
-                    <div className="flex-1 bg-[#f3e9e6]/50 rounded-2xl overflow-hidden relative flex items-center justify-center min-h-[250px] max-h-[50vh]">
-                        {controlState === 'CROP' ? (
-                            <div className={`w-full h-full flex items-center justify-center transition-opacity ${isProcessingCrop ? 'opacity-50' : 'opacity-100'}`}>
-                                <ReactCrop 
-                                    crop={crop} 
-                                    onChange={(_, percentCrop) => setCrop(percentCrop)} 
-                                    onComplete={(c) => setCompletedCrop(c)} 
-                                    aspect={4 / 5} // <- RESTORED FIXED ASPECT RATIO
-                                    className="max-h-full"
-                                >
-                                    <img 
-                                        ref={imgRef} 
-                                        src={activeImg.url} 
-                                        alt="Crop Target" 
-                                        onLoad={onImageLoad} // <- RESTORED INITIALIZATION
-                                        className="max-h-[45vh] w-auto object-contain" 
-                                    />
-                                </ReactCrop>
-                            </div>
-                        ) : (
-                            <img 
-                                src={activeImg.url} 
-                                alt="Preview" 
-                                className="w-full h-full object-contain transition-all duration-300"
-                                style={imageFilters} 
-                            />
-                        )}
+                    {/* Hero Text */}
+                    <div className="text-center mb-3 md:mb-6 flex-shrink-0">
+                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">Let's make it pop.</h2>
+                        <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto px-4">
+                            {isEN ? "Toggle AI enhancement or manually adjust to perfection." : "Guna AI untuk mencantikkan gambar atau ubah secara manual."}
+                        </p>
                     </div>
 
-                    {/* Middle: Interaction Zone */}
-                    <div className="mt-4 md:mt-6 flex-shrink-0 min-h-[100px] flex items-center justify-center px-2">
-                        
-                        <div className="relative w-full max-w-sm mx-auto pt-8">
-                            
-                            {/* RESET BUTTON */}
-                            {controlState !== 'CROP' && (
-                                <button 
-                                    onClick={handleReset}
-                                    className={`absolute top-0 ${controlState === 'ADJUST' ? 'left-0' : 'right-0'} p-2 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:scale-95 transition-all`}
-                                    title={isEN ? "Reset edits" : "Tetap semula"}
-                                >
-                                    <RotateCcw size={18} strokeWidth={2.5} />
-                                </button>
-                            )}
+                    {/* FIX 2: The Main Container Card. Allowed it to expand its height dynamically by changing flex properties. */}
+                    <div className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-6 shadow-sm border border-gray-100 flex-1 flex flex-col relative min-h-[400px]">
 
-                            {/* X (CLOSE) BUTTON - Only visible during ADJUST */}
-                            {controlState === 'ADJUST' && (
-                                <button 
-                                    onClick={() => setControlState('DEFAULT')}
-                                    className="absolute top-0 right-0 p-2 rounded-full bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-[#dc2626] active:bg-[#dc2626] active:text-white active:shadow-[0_0_15px_rgba(220,38,38,0.6)] transition-all"
-                                >
-                                    <X size={18} strokeWidth={2.5} />
-                                </button>
-                            )}
-
-                            {/* STATE: DEFAULT (The 3 Buttons) */}
-                            {controlState === 'DEFAULT' && (
-                                <div className="flex items-center justify-center gap-6 md:gap-10 animate-[fadeIn_0.2s_ease]">
-                                    {/* Enhance */}
-                                    <div className="flex flex-col items-center gap-2">
-                                        <button 
-                                            onClick={handleAutoEnhance}
-                                            className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-                                                activeImg.isEnhanced 
-                                                    ? 'bg-white border border-gray-100 ai-shine-active' 
-                                                    : 'bg-gray-50 hover:bg-gray-100'
-                                            }`}
-                                        >
-                                            <Sparkles size={24} stroke={activeImg.isEnhanced ? "url(#gemini-gradient)" : "#6b7280"} />
-                                        </button>
-                                        <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                            {isEN ? "AI Enhance" : "AI Cantik"}
-                                        </span>
-                                    </div>
-
-                                    {/* Crop */}
-                                    <div className="flex flex-col items-center gap-2">
-                                        <button 
-                                            onClick={() => setControlState('CROP')}
-                                            className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gray-50 text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-all"
-                                        >
-                                            <CropIcon size={24} />
-                                        </button>
-                                        <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                            {isEN ? "Crop" : "Potong"}
-                                        </span>
-                                    </div>
-
-                                    {/* Adjust */}
-                                    <div className="flex flex-col items-center gap-2">
-                                        <button 
-                                            onClick={() => setControlState('ADJUST')}
-                                            className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gray-50 text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-all"
-                                        >
-                                            <SlidersHorizontal size={24} />
-                                        </button>
-                                        <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                            {isEN ? "Adjust" : "Ubah"}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* STATE: ADJUST (Apple-like Sliders) */}
-                            {controlState === 'ADJUST' && (
-                                <div className="flex flex-col gap-5 mt-2 animate-[fadeIn_0.2s_ease]">
-                                    <div className="flex items-center gap-3">
-                                        <Sun size={18} className="text-gray-400" />
-                                        <span className="w-20 text-xs font-medium text-gray-600">{isEN ? "Brightness" : "Kecerahan"}</span>
-                                        <input type="range" min="0" max="100" value={activeImg.brightness} onChange={(e) => handleSliderChange('brightness', e.target.value)} 
-                                            className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Contrast size={18} className="text-gray-400" />
-                                        <span className="w-20 text-xs font-medium text-gray-600">{isEN ? "Contrast" : "Kontras"}</span>
-                                        <input type="range" min="0" max="100" value={activeImg.contrast} onChange={(e) => handleSliderChange('contrast', e.target.value)} 
-                                            className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Droplets size={18} className="text-gray-400" />
-                                        <span className="w-20 text-xs font-medium text-gray-600">{isEN ? "Saturation" : "Saturasi"}</span>
-                                        <input type="range" min="0" max="100" value={activeImg.saturation} onChange={(e) => handleSliderChange('saturation', e.target.value)} 
-                                            className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* STATE: CROP (Cancel/Apply) */}
-                            {controlState === 'CROP' && (
-                                <div className="w-full flex gap-3 animate-[fadeIn_0.2s_ease]">
-                                    <button 
-                                        disabled={isProcessingCrop} 
-                                        onClick={() => setControlState('DEFAULT')} 
-                                        className="flex-1 px-4 py-3 rounded-xl font-semibold transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        {/* Top: Image Preview Zone (The Shock Absorber) */}
+                        {/* FIX 3: Removed max-h-[50vh] and strict min-h-[250px]. Used flex-1 and a smaller min-h-[150px] to act as a spring */}
+                        <div className="flex-1 bg-[#f3e9e6]/50 rounded-xl md:rounded-2xl overflow-hidden relative flex items-center justify-center min-h-[150px] md:min-h-[250px] p-2">
+                            {controlState === 'CROP' ? (
+                                <div className={`w-full h-full flex items-center justify-center transition-opacity ${isProcessingCrop ? 'opacity-50' : 'opacity-100'}`}>
+                                    <ReactCrop
+                                        crop={crop}
+                                        onChange={(_, percentCrop) => setCrop(percentCrop)}
+                                        onComplete={(c) => setCompletedCrop(c)}
+                                        aspect={4 / 5}
+                                        className="max-h-full flex items-center justify-center"
                                     >
-                                        {isEN ? "Cancel" : "Batal"}
-                                    </button>
-                                    <button 
-                                        disabled={isProcessingCrop} 
-                                        onClick={handleApplyCrop} 
-                                        className="flex-1 px-4 py-3 rounded-xl font-semibold transition-colors bg-[#1a0f0d] text-white shadow-md hover:bg-black flex items-center justify-center gap-2"
-                                    >
-                                        {isProcessingCrop ? <span className="animate-pulse">...</span> : <><Check size={18}/> {isEN ? "Apply" : "Teruskan"}</>}
-                                    </button>
+                                        <img
+                                            ref={imgRef}
+                                            src={activeImg.url}
+                                            alt="Crop Target"
+                                            onLoad={onImageLoad}
+                                            className="max-h-full max-w-full w-auto object-contain rounded-md"
+                                        />
+                                    </ReactCrop>
                                 </div>
+                            ) : (
+                                <img
+                                    src={activeImg.url}
+                                    alt="Preview"
+                                    className="max-w-full max-h-full object-contain transition-all duration-300 rounded-md"
+                                    style={imageFilters}
+                                />
                             )}
                         </div>
-                    </div>
 
-                    {/* Bottom: Navigation Zone */}
-                    <div className="mt-8 flex flex-col gap-3 max-w-xs mx-auto w-full flex-shrink-0">
-                        <button 
-                            onClick={onNext}
-                            disabled={controlState === 'CROP' || isProcessingCrop}
-                            className="bg-[#dc2626] text-white px-8 py-3.5 rounded-full text-base font-semibold shadow-[0_8px_20px_rgba(220,38,38,0.25)] hover:-translate-y-1 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-                        >
-                            {isEN ? "Pick a design" : "Pilih rekaan"} <ArrowRight size={18} />
-                        </button>
-                        
-                        <button 
-                            onClick={onPrev}
-                            disabled={controlState === 'CROP' || isProcessingCrop}
-                            className="border-2 border-[#e5d5d0] text-[#1a0f0d] bg-white px-8 py-3.5 rounded-full text-base font-semibold hover:border-[#dc2626] hover:text-[#dc2626] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ArrowLeft size={18} /> {isEN ? "Back to Upload" : "Kembali"}
-                        </button>
-                    </div>
+                        {/* Middle: Interaction Zone */}
+                        <div className="mt-4 md:mt-6 flex-shrink-0 min-h-[80px] md:min-h-[100px] flex items-center justify-center px-2">
+                            <div className="relative w-full max-w-sm mx-auto pt-6 md:pt-8">
 
-                </div>
-            </section>
+                                {/* RESET BUTTON */}
+                                {controlState !== 'CROP' && (
+                                    <button
+                                        onClick={handleReset}
+                                        className={`absolute top-0 ${controlState === 'ADJUST' ? 'left-0' : 'right-0'} p-2 rounded-full bg-gray-50 text-gray-400 md:hover:bg-gray-100 md:hover:text-gray-700 active:scale-95 transition-all`}
+                                        title={isEN ? "Reset edits" : "Tetap semula"}
+                                    >
+                                        <RotateCcw size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={2.5} />
+                                    </button>
+                                )}
+
+                                {/* X (CLOSE) BUTTON */}
+                                {controlState === 'ADJUST' && (
+                                    <button
+                                        onClick={() => setControlState('DEFAULT')}
+                                        className="absolute top-0 right-0 p-2 rounded-full bg-gray-50 text-gray-400 md:hover:bg-red-50 md:hover:text-[#dc2626] active:bg-[#dc2626] active:text-white active:shadow-[0_0_15px_rgba(220,38,38,0.6)] transition-all"
+                                    >
+                                        <X size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={2.5} />
+                                    </button>
+                                )}
+
+                                {/* STATE: DEFAULT */}
+                                {controlState === 'DEFAULT' && (
+                                    <div className="flex items-center justify-center gap-4 md:gap-10 animate-[fadeIn_0.2s_ease]">
+                                        {/* Enhance */}
+                                        <div className="flex flex-col items-center gap-1.5 md:gap-2">
+                                            <button
+                                                onClick={handleAutoEnhance}
+                                                className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${activeImg.isEnhanced
+                                                    ? 'bg-white border border-gray-100 ai-shine-active'
+                                                    : 'bg-gray-50 md:hover:bg-gray-100'
+                                                    }`}
+                                            >
+                                                <Sparkles size={20} className="md:w-6 md:h-6" stroke={activeImg.isEnhanced ? "url(#gemini-gradient)" : "#6b7280"} />
+                                            </button>
+                                            <span className="text-[9px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                                {isEN ? "AI Enhance" : "AI Cantik"}
+                                            </span>
+                                        </div>
+
+                                        {/* Crop */}
+                                        <div className="flex flex-col items-center gap-1.5 md:gap-2">
+                                            <button
+                                                onClick={() => setControlState('CROP')}
+                                                className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gray-50 text-gray-700 md:hover:bg-gray-100 flex items-center justify-center transition-all"
+                                            >
+                                                <CropIcon size={20} className="md:w-6 md:h-6" />
+                                            </button>
+                                            <span className="text-[9px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                                {isEN ? "Crop" : "Potong"}
+                                            </span>
+                                        </div>
+
+                                        {/* Adjust */}
+                                        <div className="flex flex-col items-center gap-1.5 md:gap-2">
+                                            <button
+                                                onClick={() => setControlState('ADJUST')}
+                                                className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gray-50 text-gray-700 md:hover:bg-gray-100 flex items-center justify-center transition-all"
+                                            >
+                                                <SlidersHorizontal size={20} className="md:w-6 md:h-6" />
+                                            </button>
+                                            <span className="text-[9px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                                {isEN ? "Adjust" : "Ubah"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* STATE: ADJUST */}
+                                {controlState === 'ADJUST' && (
+                                    <div className="flex flex-col gap-4 mt-1 md:mt-2 animate-[fadeIn_0.2s_ease]">
+                                        <div className="flex items-center gap-2 md:gap-3">
+                                            <Sun size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
+                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Brightness" : "Kecerahan"}</span>
+                                            <input type="range" min="0" max="100" value={activeImg.brightness} onChange={(e) => handleSliderChange('brightness', e.target.value)}
+                                                className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
+                                        </div>
+                                        <div className="flex items-center gap-2 md:gap-3">
+                                            <Contrast size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
+                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Contrast" : "Kontras"}</span>
+                                            <input type="range" min="0" max="100" value={activeImg.contrast} onChange={(e) => handleSliderChange('contrast', e.target.value)}
+                                                className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
+                                        </div>
+                                        <div className="flex items-center gap-2 md:gap-3">
+                                            <Droplets size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
+                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Saturation" : "Saturasi"}</span>
+                                            <input type="range" min="0" max="100" value={activeImg.saturation} onChange={(e) => handleSliderChange('saturation', e.target.value)}
+                                                className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* STATE: CROP */}
+                                {controlState === 'CROP' && (
+                                    <div className="w-full flex gap-2 md:gap-3 animate-[fadeIn_0.2s_ease]">
+                                        <button
+                                            disabled={isProcessingCrop}
+                                            onClick={() => setControlState('DEFAULT')}
+                                            className="flex-1 px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-colors bg-gray-100 text-gray-600 md:hover:bg-gray-200 active:scale-95"
+                                        >
+                                            {isEN ? "Cancel" : "Batal"}
+                                        </button>
+                                        <button
+                                            disabled={isProcessingCrop}
+                                            onClick={handleApplyCrop}
+                                            className="flex-1 px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-colors bg-[#1a0f0d] text-white shadow-md md:hover:bg-black flex items-center justify-center gap-2 active:scale-95"
+                                        >
+                                            {isProcessingCrop ? <span className="animate-pulse">...</span> : <><Check size={16} className="md:w-[18px] md:h-[18px]" /> {isEN ? "Apply" : "Teruskan"}</>}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Bottom: Navigation Zone */}
+                        {/* FIX 4: Changed mt-8 to mt-auto pt-4. This pushes the buttons firmly to the bottom but allows them to safely hug the sliders when space is tight. */}
+                        <div className="mt-auto pt-5 flex flex-col gap-2.5 max-w-xs mx-auto w-full flex-shrink-0">
+                            <button
+                                onClick={onNext}
+                                disabled={controlState === 'CROP' || isProcessingCrop}
+                                className="bg-[#dc2626] text-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-semibold shadow-[0_8px_20px_rgba(220,38,38,0.25)] md:hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                            >
+                                {isEN ? "Pick a design" : "Pilih rekaan"} <ArrowRight size={16} className="md:w-[18px] md:h-[18px]" />
+                            </button>
+
+                            <button
+                                onClick={onPrev}
+                                disabled={controlState === 'CROP' || isProcessingCrop}
+                                className="border-[1.5px] md:border-2 border-[#e5d5d0] text-[#1a0f0d] bg-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-semibold md:hover:border-[#dc2626] md:hover:text-[#dc2626] active:bg-gray-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <ArrowLeft size={16} className="md:w-[18px] md:h-[18px]" /> {isEN ? "Back to Upload" : "Kembali"}
+                            </button>
+                        </div>
+
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }

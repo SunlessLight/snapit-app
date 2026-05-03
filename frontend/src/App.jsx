@@ -17,7 +17,7 @@ const DEFAULT_MEDIA_STATE = {
   isEnhanced: false
 };
 
-const DEFAULT_MARKETING_CONFIG = { price: "", outputLanguage: "Bahasa Melayu", tone: "Casual Manglish", posterStyle: "Bold Promo" };
+const DEFAULT_MARKETING_CONFIG = { dishName: "", price: "", outputLanguage: "", backgroundVibe: "" };
 const DEFAULT_AI_OUTPUT = {
   title: "🔥 Sedap Giler Nasi Lemak Ayam Goreng Berempah!",
   description: "Crispy on the outside, juicy on the inside! Our signature Nasi Lemak comes with freshly fried Ayam Berempah...",

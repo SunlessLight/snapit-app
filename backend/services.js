@@ -6,7 +6,7 @@ const FormData = require('form-data');
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function generateMarketingCopy(imageBuffer, mimeType, params) {
-    const { price, outputLanguage, tone, posterStyle } = params;
+    const { dishName, price, outputLanguage, backgroundVibe } = params;
 
     const prompt = `
         You are an expert digital marketing copywriter and an AI image prompt engineer. 
@@ -14,12 +14,12 @@ async function generateMarketingCopy(imageBuffer, mimeType, params) {
 
         Task 1: Marketing Copy
         Write professional marketing copy for the product.
+        DishName: ${dishName}
         Price: ${price}
         Output Language: ${outputLanguage}
-        Tone: ${tone}
 
         Task 2: Background Generation Prompt
-        Based on the Visual Poster Style Context: "${posterStyle}", write a highly detailed, photorealistic prompt for a generative background AI.
+        Based on the Visual Background Style Context: "${backgroundVibe}", write a highly detailed, photorealistic prompt for a generative background AI.
         
         CRITICAL RULES FOR BACKGROUND PROMPT:
         - DO NOT describe the food itself. The food is already cut out.

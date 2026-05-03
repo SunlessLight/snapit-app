@@ -9,13 +9,13 @@ async function generateProAssets(req, res) {
             return res.status(400).json({ success: false, error: "Image file is required." });
         }
 
-        const { price, outputLanguage, tone, posterStyle } = req.body;
+        const { dishName, price, outputLanguage, backgroundVibe } = req.body;
 
-        const textFields = [price, outputLanguage, tone, posterStyle];
+        const textFields = [dishName, price, outputLanguage, backgroundVibe];
         if (textFields.some(field => typeof field !== 'string' || field.trim() === '')) {
             return res.status(400).json({
                 success: false,
-                error: "Invalid or missing required text fields: price, outputLanguage, tone, posterStyle must be non-empty strings."
+                error: `Missing required fields. Received: dishName(${dishName}), price(${price}), lang(${outputLanguage}), vibe(${backgroundVibe})`
             });
         }
 
@@ -26,7 +26,7 @@ async function generateProAssets(req, res) {
         const copyResult = await generateMarketingCopy(
             imageBuffer,
             mimeType,
-            { price, outputLanguage, tone, posterStyle }
+            { dishName, price, outputLanguage, backgroundVibe }
         );
 
         const aiBackgroundPrompt = copyResult.backgroundPrompt;
