@@ -3,9 +3,9 @@ import { User } from 'lucide-react';
 
 export default function Header({ snapitLogo, userName }) {
     return (
-        <header className="flex items-center justify-between mb-3 md:mb-8 flex-shrink-0">
+        <header className="flex items-center justify-between px-4 py-2 md:mb-8 flex-shrink-0">
             <div className="flex items-center gap-2 md:gap-3">
-                <img src={snapitLogo} alt="SnapIT" className="w-24 h-16 md:w-24 md:h-24 object-contain" />
+                <img src={snapitLogo} alt="SnapIT" className="w-24 h-12 md:w-24 md:h-24 object-contain" />
                 <div className="hidden sm:block">
                     <p className="text-sm opacity-70">Photos, elevated.</p>
                 </div>

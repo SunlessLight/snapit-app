@@ -8,8 +8,6 @@ import {
     ChevronsLeftRight,
     Sparkles
 } from 'lucide-react';
-import snapitLogo from '../assets/snapit-logo.png';
-import Header from './header';
 
 // --- Sub-Component: Smart Content Card (No changes here) ---
 const ContentCard = ({ label, value, field, onUpdate, isEN }) => {
@@ -106,12 +104,6 @@ export default function ResultsHubView({ userName, appUILanguage, mediaState, ai
         setTimeout(() => setToastMessage(null), 3000);
     };
 
-    /**
-     * MAJOR ADDITION: The Canvas Baker Utility
-     * Loads the raw image into memory, applies mathematical filters on a canvas,
-     * and exports a Blob that actually contains the user's edits.
-     * Implemented in useCallback to prevent re-creation.
-     */
     const createProcessedBlob = useCallback((src, brightness, contrast, saturation) => {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -154,12 +146,6 @@ export default function ResultsHubView({ userName, appUILanguage, mediaState, ai
         });
     }, []);
 
-
-    /**
-     * MODIFIED: handleDownload (Scenario A - Baked Download)
-     * Now async. If downloading the original side, it calls createProcessedBlob
-     * first to "bake" the filters into a real downloadable file.
-     */
     const handleDownload = async () => {
         const isShowingAI = sliderValue >= 50;
 
@@ -248,7 +234,7 @@ export default function ResultsHubView({ userName, appUILanguage, mediaState, ai
     };
 
     return (
-        <div className="h-[100dvh] overflow-y-auto bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col py-3 md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
+        <div className="min-h-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
 
             {toastMessage && (
                 <div className="fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-[#1a0f0d] text-white px-6 py-3 rounded-full shadow-xl text-sm font-medium animate-bounce">
@@ -257,9 +243,6 @@ export default function ResultsHubView({ userName, appUILanguage, mediaState, ai
             )}
 
             <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0 pb-48 md:pb-56">
-
-                {/* SECTION A: Header Component */}
-                <Header snapitLogo={snapitLogo} userName={userName} />
 
                 <div className="text-center mb-4 md:mb-8 flex-shrink-0">
                     <h1 className="font-serif text-2xl md:text-4xl font-extrabold mb-1 md:mb-3 tracking-tight">
@@ -379,7 +362,7 @@ export default function ResultsHubView({ userName, appUILanguage, mediaState, ai
                 <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-3 md:gap-4 w-full">
                     <button
                         onClick={handleGlobalShare}
-                        className="w-full sm:flex-1 bg-[#1a0f0d] hover:bg-black text-white text-sm md:text-lg font-semibold py-3 md:py-3.5 rounded-full shadow-lg flex items-center justify-center gap-2 md:gap-3 transition-transform active:scale-[0.98]"
+                        className="w-full sm:flex-1 bg-[#dc2626] hover:bg-black text-white text-sm md:text-lg font-semibold py-3 md:py-3.5 rounded-full shadow-lg flex items-center justify-center gap-2 md:gap-3 transition-transform active:scale-[0.98]"
                     >
                         <Share2 size={20} />
                         {isEN ? "Share to Social Media" : "Kongsi ke Media Sosial"}

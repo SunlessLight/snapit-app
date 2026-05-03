@@ -25,7 +25,7 @@ export default function DynamicTimeline({ currentStep, isEN }) {
                             key={step.num}
                             className={`flex items-center justify-center rounded-full transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden
                                 ${isActive
-                                    ? 'bg-[#1a0f0d] text-white px-4 py-1.5 shadow-md' // The expanded active pill
+                                    ? 'bg-[#dc2626] text-white px-4 py-1.5 shadow-md' // The expanded active pill
                                     : isPast
                                         ? 'bg-gray-200 text-gray-500 w-8 h-8 md:w-9 md:h-9' // Past steps (subtle dots)
                                         : 'bg-gray-100 text-gray-400 w-8 h-8 md:w-9 md:h-9' // Future steps

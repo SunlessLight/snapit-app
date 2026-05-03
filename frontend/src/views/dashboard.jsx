@@ -1,9 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import heic2any from 'heic2any';
 import { PRO_TIPS } from '../constants';
-import { Camera, ArrowRight, X, Loader2, UploadCloud, User } from 'lucide-react';
-import snapitLogo from '../assets/snapit-logo.png';
-import Header from './header';
+import { Camera, ArrowRight, X, Loader2, UploadCloud } from 'lucide-react';
 
 export default function DashboardView({ userName, appUILanguage, setAppUILanguage, onImageSelect, onImageRemove, mediaState, onNext }) {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -94,18 +92,16 @@ export default function DashboardView({ userName, appUILanguage, setAppUILanguag
     }, []);
 
     return (
-        <div className="h-[100dvh] overflow-y-auto bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col py-3 md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
+        <div className="h-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
 
             <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0">
-
-                <Header snapitLogo={snapitLogo} userName={userName} />
 
                 {/* Main Content Area */}
                 <section className="flex-1 flex flex-col w-full min-h-0 animate-fade-in pb-2 md:pb-4">
 
                     {/* Hero Text - Margins tightened */}
                     <div className="text-center mb-3 md:mb-6 flex-shrink-0">
-                        <h2 className="font-serif text-xl md:text-3xl font-extrabold mb-1 md:mb-3">Drop a photo.</h2>
+                        <h2 className="font-serif text-xl md:text-3xl font-extrabold mb-1 md:mb-3">Drop a photo</h2>
                         <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">We'll polish it and turn it into something worth sharing.</p>
                     </div>
 
@@ -193,7 +189,7 @@ export default function DashboardView({ userName, appUILanguage, setAppUILanguag
                                 onClick={onNext}
                                 className="bg-[#dc2626] w-full max-w-xs justify-center text-white px-6 md:px-8 py-3 md:py-3.5 rounded-full font-semibold flex items-center gap-2 hover:brightness-90 transition-all md:hover:-translate-y-1 shadow-[0_8px_20px_rgba(220,38,38,0.25)] text-sm md:text-lg"
                             >
-                                Proceed to Enhance <ArrowRight size={18} />
+                                Edit <ArrowRight size={18} />
                             </button>
                         ) : (
                             <>

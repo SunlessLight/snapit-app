@@ -7,7 +7,10 @@ import MediaEditorView from './views/mediaeditor';
 import ContextConfigurationView from './views/contextconfiguration';
 import ProcessingScreen from './views/processingscreen';
 import ResultsHubView from './views/resultshub';
-import foodImage from './assets/food_image.webp'
+import foodImage from './assets/food_image.webp';
+import snapitLogo from './assets/snapit-logo.png';
+import Header from './views/header';
+import DynamicTimeline from './views/dynamictimeline';
 
 const DEFAULT_MEDIA_STATE = {
   file: null,
@@ -17,8 +20,8 @@ const DEFAULT_MEDIA_STATE = {
   saturation: 50,
   isEnhanced: false
 };
-
-const DEFAULT_MARKETING_CONFIG = { dishName: "Nasi Lemak", price: "RM 12", outputLanguage: "EN", backgroundVibe: "Premium" };
+// const DEFAULT_MARKETING_CONFIG = { dishName: "Nasi Lemak", price: "RM 12", outputLanguage: "english", backgroundVibe: "Premium" };
+const DEFAULT_MARKETING_CONFIG = { dishName: "", price: "", outputLanguage: "", backgroundVibe: "" };
 const DEFAULT_AI_OUTPUT = {
   title: "🔥 Sedap Giler Nasi Lemak Ayam Goreng Berempah!",
   description: "Crispy on the outside, juicy on the inside! Our signature Nasi Lemak comes with freshly fried Ayam Berempah, fragrant coconut rice, and our secret recipe sambal that hits all the right notes.",
@@ -29,13 +32,16 @@ const DEFAULT_AI_OUTPUT = {
 };
 
 export default function App() {
-  const [currentStep, setCurrentStep] = useState(5);
+  const [currentStep, setCurrentStep] = useState(0);
   const [userName, setUserName] = useState(' ');
   const [appUILanguage, setAppUILanguage] = useState("EN");
 
   const [mediaState, setMediaState] = useState(DEFAULT_MEDIA_STATE);
   const [marketingConfig, setMarketingConfig] = useState(DEFAULT_MARKETING_CONFIG);
   const [aiOutput, setAiOutput] = useState(DEFAULT_AI_OUTPUT);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const isProcessingScreen = currentStep === 4;
 
   const nextStep = useCallback(() => setCurrentStep((prev) => Math.min(prev + 1, 5)), []);
   const prevStep = useCallback(() => setCurrentStep((prev) => Math.max(prev - 1, 1)), []);
@@ -84,11 +90,30 @@ export default function App() {
     };
   }, []);
 
+  // NEW: The Scroll Detector
+  const handleScroll = (e) => {
+    const currentScrollY = e.target.scrollTop;
+
+    // Only trigger if scrolled more than 10px to avoid jitter/bouncing
+    if (currentScrollY > lastScrollY.current + 10) {
+      setIsHeaderVisible(false); // Scrolling down -> Hide
+    } else if (currentScrollY < lastScrollY.current - 10) {
+      setIsHeaderVisible(true);  // Scrolling up -> Show
+    }
+
+    lastScrollY.current = currentScrollY;
+  };
+
+  // Reset scroll state whenever the user moves to a new step
+  useEffect(() => {
+    setIsHeaderVisible(true);
+    lastScrollY.current = 0;
+  }, [currentStep]);
+
   const renderView = () => {
     switch (currentStep) {
       case 0:
         return <WelcomeScreen onStart={handleStart} />;
-
       case 1:
         // We can pass nextStep directly since we removed the array index wrapper
         return <DashboardView userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
@@ -107,16 +132,23 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#fff8f6] overflow-hidden relative flex flex-col">
+    <div className="w-full min-h-screen bg-[#fff8f6] overflow-hidden relative">
 
-      {/* 1. Global Header (Scrolls away) */}
-      <Header snapitLogo={snapitLogo} userName={userName} />
+      {/* Floating Global Header wrapper */}
+      <div
+        className={`absolute top-0 left-0 w-full z-50 transition-transform duration-500 ease-in-out pointer-events-none ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+          }`}
+      >
+        {currentStep > 0 && (
+          <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
+            <Header snapitLogo={snapitLogo} userName={userName} />
+            <DynamicTimeline currentStep={currentStep} isEN={appUILanguage === "EN"} />
+          </div>
+        )}
+      </div>
 
-      {/* 2. Global Dynamic Island (Sticky & Persistent) */}
-      <DynamicTimeline currentStep={currentStep} isEN={appUILanguage === "EN"} />
-
-      {/* 3. The Page Content (Swaps out on step change) */}
-      <div className="flex-1 relative w-full h-full">
+      {/* The Single Source of Truth for Scrolling */}
+      <div className="absolute inset-0 w-full h-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -124,7 +156,11 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="absolute inset-0 w-full h-full overflow-y-auto pb-safe"
+            onScroll={handleScroll} // <-- Attach scroll listener here
+            className={`w-full h-full pb-safe transition-[padding] duration-300 ${isProcessingScreen
+              ? 'overflow-hidden pt-0' // Processing Screen: Locks scroll, scales to 100vh, slides under header
+              : 'overflow-y-auto pt-[130px]' // Normal Screens: Scrollable, padded down
+              }`}
           >
             {renderView()}
           </motion.div>

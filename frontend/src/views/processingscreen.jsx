@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const LOADING_TEXTS = {
-    EN: ["Chopping up the data...", "Adding some Manglish spice...", "Plating your digital poster...", "Applying final touches..."],
+    EN: ["Chopping up the data...", "Adding some Malaglish spice...", "Plating your digital poster...", "Applying final touches..."],
     MY: ["Memproses data...", "Menambah perisa AI...", "Menyediakan poster digital...", "Sentuhan terakhir..."]
 };
 
@@ -69,6 +69,7 @@ export default function ProcessingScreen({
 
         const generateProAssets = async () => {
             try {
+
                 if (!selectedFile) {
                     throw new Error(isEN ? "Critical Error: No image payload found." : "Ralat Kritikal: Tiada fail gambar dijumpai.");
                 }
@@ -85,11 +86,13 @@ export default function ProcessingScreen({
                     abortController.abort();
                 }, FETCH_TIMEOUT_MS);
 
+
                 const response = await fetch('http://localhost:3000/api/generate-pro-assets', {
                     method: 'POST',
                     body: formData,
                     signal: abortController.signal
                 });
+
 
                 clearTimeout(timeoutId);
 
@@ -161,57 +164,81 @@ export default function ProcessingScreen({
 
     // 4. Loading State UI (Upgraded Apple Vibe + Mesh Gradient + Glister)
     return (
-        <div className="h-[100dvh] w-full relative overflow-hidden bg-[#fff8f6] flex flex-col items-center justify-center px-8">
+        <div className="h-full w-full relative overflow-hidden bg-transparent flex flex-col items-center justify-center px-8">
 
             {/* Background Container */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#f8f9fa]">
 
-                {/* 1. Vibrant Rose Blob */}
+                {/* 1. Vibrant Rose Blob (Top Left -> Sweeps Right/Down) */}
                 <motion.div
                     animate={{
-                        x: [0, 80, -40, 0],
-                        y: [0, -80, 40, 0],
-                        scale: [1, 1.2, 0.9, 1],
+                        x: ["0vw", "20vw", "-10vw", "0vw"],
+                        y: ["0vh", "-10vh", "15vh", "0vh"],
+                        scale: [1, 1.4, 0.8, 1],
                         rotate: [0, 90, 180, 360]
                     }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-rose-400/60 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
+                    transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-rose-400/50 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
                 />
 
-                {/* 2. Warm Amber Blob */}
+                {/* 2. Bright Yellow Blob (Top Right -> Sweeps Left/Down) */}
                 <motion.div
                     animate={{
-                        x: [0, -60, 60, 0],
-                        y: [0, 80, -40, 0],
-                        scale: [1, 0.9, 1.1, 1],
-                        rotate: [360, 180, 90, 0]
+                        x: ["0vw", "-25vw", "10vw", "0vw"],
+                        y: ["0vh", "20vh", "-15vh", "0vh"],
+                        scale: [1, 0.8, 1.3, 1],
+                        rotate: [360, 240, 120, 0]
                     }}
-                    transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-[20%] right-[-10%] w-[50vw] h-[50vw] bg-amber-400/60 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
+                    transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-yellow-400/50 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
                 />
 
-                {/* 3. Sunset Orange Blob */}
+                {/* 3. Deep Purple Blob (Bottom Left -> Sweeps Right/Up) */}
                 <motion.div
                     animate={{
-                        x: [0, 40, -80, 0],
-                        y: [0, 40, -80, 0],
-                        scale: [1, 1.3, 0.85, 1],
-                        rotate: [0, -90, -180, -360]
+                        x: ["0vw", "30vw", "-15vw", "0vw"],
+                        y: ["0vh", "-25vh", "10vh", "0vh"],
+                        scale: [0.9, 1.5, 1, 0.9],
+                        rotate: [0, -180, -360]
                     }}
-                    transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-                    className="absolute bottom-[-20%] left-[20%] w-[70vw] h-[70vw] bg-orange-400/50 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
+                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute bottom-[-10%] left-[-10%] w-[55vw] h-[55vw] bg-purple-500/40 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
                 />
 
-                {/* 4. Fuchsia Blob for richer color mixing */}
+                {/* 4. Emerald Green Blob (Bottom Right -> Sweeps Left/Up) */}
                 <motion.div
                     animate={{
-                        x: [-40, 40, 0, -40],
-                        y: [-40, 0, 40, -40],
-                        scale: [0.9, 1.1, 1, 0.9],
+                        x: ["0vw", "-20vw", "25vw", "0vw"],
+                        y: ["0vh", "-30vh", "15vh", "0vh"],
+                        scale: [1.1, 0.8, 1.4, 1.1],
                         rotate: [0, 180, 360]
                     }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-[30%] left-[30%] w-[40vw] h-[40vw] bg-fuchsia-400/40 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
+                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-emerald-400/40 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
+                />
+
+                {/* 5. Sunset Orange Blob (Center -> Breathes and orbits) */}
+                <motion.div
+                    animate={{
+                        x: ["-10vw", "15vw", "-10vw"],
+                        y: ["-10vh", "15vh", "-10vh"],
+                        scale: [0.8, 1.6, 0.8],
+                        rotate: [0, 360]
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-[20%] left-[20%] w-[60vw] h-[60vw] bg-orange-400/40 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
+                />
+
+                {/* 6. Cyan Flow Blob (Center Right -> Drifts freely) */}
+                <motion.div
+                    animate={{
+                        x: ["15vw", "-20vw", "15vw"],
+                        y: ["15vh", "-15vh", "15vh"],
+                        scale: [1.2, 0.7, 1.2],
+                        rotate: [360, 0]
+                    }}
+                    transition={{ duration: 19, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-[30%] right-[10%] w-[40vw] h-[40vw] bg-cyan-400/30 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
                 />
 
                 {/* The Glister / Sparkle Overlay */}

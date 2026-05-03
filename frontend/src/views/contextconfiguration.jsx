@@ -71,17 +71,17 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
         (config.backgroundVibe !== "");
 
     return (
-        <div className="h-[100dvh] bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col overflow-hidden relative">
+        <div className="w-full pb-12 bg-[#fff8f6] text-[#1a0f0d] font-sans">
 
-            {/* Header Area */}
-            <header className="pt-6 pb-4 px-6 flex-shrink-0 flex items-center bg-[#fff8f6] z-10">
+            {/* Header Area (Now flows naturally) */}
+            <header className="pb-safe px-6 flex items-center">
                 <button
                     onClick={onPrev}
                     className="p-2.5 bg-white rounded-full shadow-sm border border-gray-100 text-gray-800 hover:text-[#dc2626] transition-colors active:scale-95"
                 >
                     <ArrowLeft size={22} />
                 </button>
-                <div className="flex-1 text-center pr-10"> {/* pr-10 to offset the absolute back button visual weight */}
+                <div className="flex-1 text-center pr-10">
                     <h1 className="text-xl md:text-2xl font-serif font-extrabold text-gray-900">
                         {isEN ? "The Details" : "Butiran"}
                     </h1>
@@ -91,8 +91,8 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                 </div>
             </header>
 
-            {/* Scrollable Form Body */}
-            <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-32 [&::-webkit-scrollbar]:hidden scroll-smooth">
+            {/* Form Body (No forced overflow, just let it stretch) */}
+            <div className="px-4 md:px-6">
                 <div className="max-w-xl mx-auto space-y-5 pt-2">
 
                     {/* Card 1: Dish & Price */}
@@ -101,7 +101,6 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                             <Utensils className="w-5 h-5 text-[#dc2626]" />
                             <h2 className="font-serif font-bold text-lg">{isEN ? "What's the dish?" : "Nama Hidangan?"}</h2>
                         </div>
-
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
@@ -115,7 +114,6 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                                     className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium"
                                 />
                             </div>
-
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
                                     {isEN ? "Price" : "Harga"}
@@ -155,7 +153,6 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                             <ImageIcon className="w-5 h-5 text-[#dc2626]" />
                             <h2 className="font-serif font-bold text-lg">{isEN ? "Background Vibe" : "Suasana Latar"}</h2>
                         </div>
-
                         <div className="grid grid-cols-2 gap-3">
                             {backgroundOptions.map((bg) => {
                                 const isSelected = config.backgroundVibe === bg.id;
@@ -165,15 +162,13 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                                         type="button"
                                         onClick={() => handleUpdate('backgroundVibe', bg.id)}
                                         className={`relative overflow-hidden text-left p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col h-28 outline-none
-                                            ${isSelected
+                                        ${isSelected
                                                 ? 'border-[#dc2626] shadow-md scale-[0.98]'
                                                 : 'border-transparent shadow-sm hover:shadow-md hover:scale-[1.02]'
                                             }
-                                        `}
+                                    `}
                                     >
-                                        {/* CSS Gradient serving as visual context since we have no actual images yet */}
                                         <div className={`absolute inset-0 bg-gradient-to-br ${bg.gradient} opacity-90`} />
-
                                         <div className="relative z-10 flex-1">
                                             <span className={`block font-serif font-bold text-sm md:text-base leading-tight ${bg.textColor}`}>
                                                 {bg.label}
@@ -182,7 +177,6 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                                                 {bg.desc}
                                             </span>
                                         </div>
-
                                         {isSelected && (
                                             <div className="relative z-10 self-end mt-auto">
                                                 <div className="bg-white rounded-full p-0.5 shadow-sm">
@@ -199,23 +193,21 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                 </div>
             </div>
 
-            {/* Sticky Footer Area - With subtle gradient fade */}
-            <div className="absolute bottom-0 left-0 w-full z-50 pt-8 pb-6 px-4 md:px-6 bg-gradient-to-t from-[#fff8f6] via-[#fff8f6] to-transparent pointer-events-none">
-                <div className="max-w-xl mx-auto pointer-events-auto">
-                    <button
-                        onClick={onNext}
-                        disabled={!isReady}
-                        className={`w-full py-4 rounded-[20px] font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300
-                            ${isReady
-                                ? "bg-[#dc2626] text-white shadow-[0_8px_20px_rgba(220,38,38,0.3)] hover:-translate-y-1 active:scale-95 cursor-pointer"
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            }
-                        `}
-                    >
-                        <Sparkles className={`w-5 h-5 ${isReady ? "animate-pulse" : ""}`} />
-                        {isEN ? "Generate Magic" : "Jana Magik"}
-                    </button>
-                </div>
+            {/* Footer Area (Now inline, naturally pushed to the bottom) */}
+            <div className="px-4 md:px-6 pt-8 max-w-xl mx-auto w-full">
+                <button
+                    onClick={onNext}
+                    disabled={!isReady}
+                    className={`w-full py-4 rounded-[20px] font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300
+                    ${isReady
+                            ? "bg-[#dc2626] text-white shadow-[0_8px_20px_rgba(220,38,38,0.3)] hover:-translate-y-1 active:scale-[0.98] cursor-pointer"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        }
+                `}
+                >
+                    <Sparkles className={`w-5 h-5 ${isReady ? "animate-pulse" : ""}`} />
+                    {isEN ? "Generate Magic" : "Jana Magik"}
+                </button>
             </div>
 
         </div>

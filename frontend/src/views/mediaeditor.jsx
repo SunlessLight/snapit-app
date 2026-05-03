@@ -140,7 +140,7 @@ export default function MediaEditorView({ userName, appUILanguage, mediaState, s
     };
 
     return (
-        <div className="h-[100dvh] overflow-y-auto bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col py-3 md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
+        <div className="h-[100dvh] overflow-y-auto bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
 
             <svg width="0" height="0" className="absolute">
                 <defs>
@@ -163,16 +163,11 @@ export default function MediaEditorView({ userName, appUILanguage, mediaState, s
 
             <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0">
 
-                {/* Header & Timeline - Margins compressed for mobile */}
-                <Header snapitLogo={snapitLogo} userName={userName} />
                 <section className="flex-1 flex flex-col justify-center animate-fade-in w-full min-h-0 max-w-3xl mx-auto pb-2 md:pb-4">
 
                     {/* Hero Text */}
-                    <div className="text-center mb-3 md:mb-6 flex-shrink-0">
+                    <div className="text-center md:mb-6 flex-shrink-0">
                         <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">Let's make it pop.</h2>
-                        <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto px-4">
-                            {isEN ? "Toggle AI enhancement or manually adjust to perfection." : "Guna AI untuk mencantikkan gambar atau ubah secara manual."}
-                        </p>
                     </div>
 
                     {/* FIX 2: The Main Container Card. Allowed it to expand its height dynamically by changing flex properties. */}
@@ -335,7 +330,7 @@ export default function MediaEditorView({ userName, appUILanguage, mediaState, s
                                 disabled={controlState === 'CROP' || isProcessingCrop}
                                 className="bg-[#dc2626] text-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-semibold shadow-[0_8px_20px_rgba(220,38,38,0.25)] md:hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                             >
-                                {isEN ? "Pick a design" : "Pilih rekaan"} <ArrowRight size={16} className="md:w-[18px] md:h-[18px]" />
+                                {isEN ? "Next" : "Seterusnya"} <ArrowRight size={16} className="md:w-[18px] md:h-[18px]" />
                             </button>
 
                             <button
@@ -343,7 +338,7 @@ export default function MediaEditorView({ userName, appUILanguage, mediaState, s
                                 disabled={controlState === 'CROP' || isProcessingCrop}
                                 className="border-[1.5px] md:border-2 border-[#e5d5d0] text-[#1a0f0d] bg-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-semibold md:hover:border-[#dc2626] md:hover:text-[#dc2626] active:bg-gray-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <ArrowLeft size={16} className="md:w-[18px] md:h-[18px]" /> {isEN ? "Back to Upload" : "Kembali"}
+                                <ArrowLeft size={16} className="md:w-[18px] md:h-[18px]" /> {isEN ? "Back" : "Kembali"}
                             </button>
                         </div>
 
