@@ -17,7 +17,6 @@ import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
 import snapitLogo from '../assets/snapit-logo.png';
-import TimelineBar from './timelinebar';
 import Header from './header';
 
 // --- Helper Functions (Preserved from your backend logic) ---
@@ -166,10 +165,6 @@ export default function MediaEditorView({ userName, appUILanguage, mediaState, s
 
                 {/* Header & Timeline - Margins compressed for mobile */}
                 <Header snapitLogo={snapitLogo} userName={userName} />
-                <div className="mb-3 md:mb-8 flex-shrink-0">
-                    <TimelineBar currentStep={2} />
-                </div>
-
                 <section className="flex-1 flex flex-col justify-center animate-fade-in w-full min-h-0 max-w-3xl mx-auto pb-2 md:pb-4">
 
                     {/* Hero Text */}

@@ -7,25 +7,29 @@ import MediaEditorView from './views/mediaeditor';
 import ContextConfigurationView from './views/contextconfiguration';
 import ProcessingScreen from './views/processingscreen';
 import ResultsHubView from './views/resultshub';
+import foodImage from './assets/food_image.webp'
 
 const DEFAULT_MEDIA_STATE = {
   file: null,
-  url: null,
+  url: foodImage,
   brightness: 50,
   contrast: 50,
   saturation: 50,
   isEnhanced: false
 };
 
-const DEFAULT_MARKETING_CONFIG = { dishName: "", price: "", outputLanguage: "", backgroundVibe: "" };
+const DEFAULT_MARKETING_CONFIG = { dishName: "Nasi Lemak", price: "RM 12", outputLanguage: "EN", backgroundVibe: "Premium" };
 const DEFAULT_AI_OUTPUT = {
   title: "🔥 Sedap Giler Nasi Lemak Ayam Goreng Berempah!",
-  description: "Crispy on the outside, juicy on the inside! Our signature Nasi Lemak comes with freshly fried Ayam Berempah...",
-  caption: "Craving something pedas and sedap? 🤤 Come try our crowd-favorite Nasi Lemak today!\n\n📍 Find us at Food Court Subang\n💵 Only RM 8.50!\n\n#NasiLemak"
+  description: "Crispy on the outside, juicy on the inside! Our signature Nasi Lemak comes with freshly fried Ayam Berempah, fragrant coconut rice, and our secret recipe sambal that hits all the right notes.",
+  caption: "Craving something pedas and sedap? 🤤 Come try our crowd-favorite Nasi Lemak today!\n\n📍 Find us at Food Court Subang\n💵 Only RM 12.00!\n\n#NasiLemak #MalaysianFood #SedapGiler",
+  generatedImageBase64: null, // Leave null so our fallback triggers
+  // Dummy AI-enhanced image (e.g., a beautifully lit version)
+  imageUrl: foodImage
 };
 
 export default function App() {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(5);
   const [userName, setUserName] = useState(' ');
   const [appUILanguage, setAppUILanguage] = useState("EN");
 
@@ -103,12 +107,30 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-900 overflow-hidden relative">
-      <AnimatePresence mode="wait">
-        <motion.div key={currentStep} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="absolute inset-0 w-full h-full">
-          {renderView()}
-        </motion.div>
-      </AnimatePresence>
+    <div className="w-full min-h-screen bg-[#fff8f6] overflow-hidden relative flex flex-col">
+
+      {/* 1. Global Header (Scrolls away) */}
+      <Header snapitLogo={snapitLogo} userName={userName} />
+
+      {/* 2. Global Dynamic Island (Sticky & Persistent) */}
+      <DynamicTimeline currentStep={currentStep} isEN={appUILanguage === "EN"} />
+
+      {/* 3. The Page Content (Swaps out on step change) */}
+      <div className="flex-1 relative w-full h-full">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 w-full h-full overflow-y-auto pb-safe"
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
     </div>
   );
 }

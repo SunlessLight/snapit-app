@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ArrowLeft, Utensils, Tag, CheckCircle2, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, ArrowLeft, Utensils, CheckCircle2, MessageSquare, Image as ImageIcon } from 'lucide-react';
 
 // Custom Segmented Control for Language
 const SegmentedControl = ({ options, selected, onChange }) => (

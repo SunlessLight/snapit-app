@@ -3,7 +3,6 @@ import heic2any from 'heic2any';
 import { PRO_TIPS } from '../constants';
 import { Camera, ArrowRight, X, Loader2, UploadCloud, User } from 'lucide-react';
 import snapitLogo from '../assets/snapit-logo.png';
-import TimelineBar from './timelinebar';
 import Header from './header';
 
 export default function DashboardView({ userName, appUILanguage, setAppUILanguage, onImageSelect, onImageRemove, mediaState, onNext }) {
@@ -100,10 +99,6 @@ export default function DashboardView({ userName, appUILanguage, setAppUILanguag
             <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0">
 
                 <Header snapitLogo={snapitLogo} userName={userName} />
-
-                <div className="mb-3 md:mb-8 flex-shrink-0">
-                    <TimelineBar currentStep={1} />
-                </div>
 
                 {/* Main Content Area */}
                 <section className="flex-1 flex flex-col w-full min-h-0 animate-fade-in pb-2 md:pb-4">
