@@ -87,7 +87,7 @@ export default function ProcessingScreen({
                 }, FETCH_TIMEOUT_MS);
 
 
-                const response = await fetch('http://localhost:3000/api/generate-pro-assets', {
+                const response = await fetch('/.netlify/functions/generate-pro-assets', {
                     method: 'POST',
                     body: formData,
                     signal: abortController.signal
