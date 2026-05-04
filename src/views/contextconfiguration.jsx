@@ -165,9 +165,6 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
         (config.outputLanguage !== "") &&
         (config.backgroundVibe !== "");
 
-
-
-
     return (
         <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
             {/* Header Area (Now flows naturally) */}
