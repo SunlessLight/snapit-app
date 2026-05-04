@@ -169,8 +169,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
 
 
     return (
-        <div className="w-full pb-12 bg-[#fff8f6] text-[#1a0f0d] font-sans">
-
+        <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
             {/* Header Area (Now flows naturally) */}
             <header className="pb-safe px-6 flex items-center">
                 <button

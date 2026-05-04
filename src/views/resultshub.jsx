@@ -23,8 +23,12 @@ const ContentCard = ({ label, value, field, onUpdate, isEN }) => {
     };
 
     useEffect(() => {
-        if (isEditing) adjustHeight();
-    }, [isEditing]);
+        if (isEditing && textareaRef.current) {
+            // Reset height briefly to get the correct scrollHeight if text is deleted
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [isEditing, value]);
 
     const handleChange = (e) => {
         onUpdate(field, e.target.value);
@@ -151,7 +155,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
     };
 
     return (
-        <div className="min-h-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12 w-full overflow-x-hidden">
+        <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12 ">
 
             {toastMessage && (
                 <div className="fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-[#1a0f0d] text-white px-6 py-3 rounded-full shadow-xl text-sm font-medium animate-bounce">
@@ -175,7 +179,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
                     {/* LEFT COLUMN: The Before/After Comparison Slider */}
                     <section className="w-full lg:w-1/2 flex flex-col gap-4 md:gap-5">
-                        <div className="relative w-full max-h-[500px] aspect-[4/5] md:aspect-square bg-white border border-gray-100 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm group touch-none">
+                        <div className="relative w-full max-h-[500px] aspect-[4/5] md:aspect-square bg-white border border-gray-100 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm group">
                             {originalImgSrc && (
                                 <div className="absolute inset-0 w-full h-full pointer-events-none">
                                     <img

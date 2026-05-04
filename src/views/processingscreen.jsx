@@ -150,7 +150,7 @@ export default function ProcessingScreen({
 
     // 4. Loading State UI (Upgraded Apple Vibe + Framer Motion Mesh Gradient)
     return (
-        <div className="h-full w-full relative overflow-hidden bg-white flex flex-col items-center justify-center px-8">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-[#fff8f6] px-6">
 
             {/* Framer Motion Mesh Gradient Background */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
