@@ -10,14 +10,11 @@ import {
     Contrast,
     Droplets,
     Check,
-    User,
     RotateCcw
 } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-import snapitLogo from '../assets/snapit-logo.png';
-import Header from './header';
 
 // --- Helper Functions (Preserved from your backend logic) ---
 async function getCroppedImg(imageElement, cropConfig) {
@@ -59,7 +56,7 @@ function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
     return centerCrop(makeAspectCrop({ unit: '%', width: 90 }, aspect, mediaWidth, mediaHeight), mediaWidth, mediaHeight);
 }
 
-export default function MediaEditorView({ userName, appUILanguage, mediaState, setMediaState, onNext, onPrev }) {
+export default function MediaEditorView({ appUILanguage, mediaState, setMediaState, onNext, onPrev }) {
     // UI State Machine: 'DEFAULT' | 'ADJUST' | 'CROP'
     const [controlState, setControlState] = useState('DEFAULT');
 

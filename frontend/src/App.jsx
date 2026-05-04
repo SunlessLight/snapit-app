@@ -18,7 +18,9 @@ const DEFAULT_MEDIA_STATE = {
   brightness: 50,
   contrast: 50,
   saturation: 50,
-  isEnhanced: false
+  isEnhanced: false,
+  processedFile: null,
+  processedUrl: null,
 };
 // const DEFAULT_MARKETING_CONFIG = { dishName: "Nasi Lemak", price: "RM 12", outputLanguage: "english", backgroundVibe: "Premium" };
 const DEFAULT_MARKETING_CONFIG = { dishName: "", price: "", outputLanguage: "", backgroundVibe: "" };
@@ -52,26 +54,30 @@ export default function App() {
   }, []);
 
   const handleImageSelect = useCallback((file, previewUrl) => {
-    setMediaState(prev => ({
-      ...prev,          // Keeps your default brightness, contrast, etc.
-      file: file,       // Overwrites the null file with the new file
-      url: previewUrl   // Overwrites the null url with the new preview URL
-    }));
+    setMediaState(prev => {
+      if (prev.processedUrl) URL.revokeObjectURL(prev.processedUrl);
+      return {
+        ...prev,
+        file: file,
+        url: previewUrl,
+        processedFile: null,
+        processedUrl: null
+      }
+    });
   }, []);
 
   const handleImageRemove = useCallback(() => {
     setMediaState(prev => {
-      if (prev.url) {
-        URL.revokeObjectURL(prev.url);
-      }
+      if (prev.url) URL.revokeObjectURL(prev.url);
+      if (prev.processedUrl) URL.revokeObjectURL(prev.processedUrl);
       return DEFAULT_MEDIA_STATE;
     });
   }, []);
 
   const handleStartOver = useCallback(() => {
     setMediaState(prev => {
-      // Direct cleanup of the single URL
       if (prev.url) URL.revokeObjectURL(prev.url);
+      if (prev.processedUrl) URL.revokeObjectURL(prev.processedUrl);
       return DEFAULT_MEDIA_STATE;
     });
     setMarketingConfig(DEFAULT_MARKETING_CONFIG);
@@ -79,14 +85,24 @@ export default function App() {
     setCurrentStep(1);
   }, []);
 
-  const activeUrl = useRef(null);
+  const activeUrls = useRef({ url: null, processedUrl: null });
+
   useEffect(() => {
     activeUrl.current = mediaState.url;
   }, [mediaState.url]);
 
   useEffect(() => {
+    activeUrls.current = {
+      url: mediaState.url,
+      processedUrl: mediaState.processedUrl
+    };
+  }, [mediaState.url, mediaState.processedUrl]);
+
+  useEffect(() => {
     return () => {
-      if (activeUrl.current) URL.revokeObjectURL(activeUrl.current);
+      // Cleanup both URLs when the App unmounts
+      if (activeUrls.current.url) URL.revokeObjectURL(activeUrls.current.url);
+      if (activeUrls.current.processedUrl) URL.revokeObjectURL(activeUrls.current.processedUrl);
     };
   }, []);
 
@@ -120,7 +136,7 @@ export default function App() {
       case 2:
         return <MediaEditorView userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
       case 3:
-        return <ContextConfigurationView userName={userName} appUILanguage={appUILanguage} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
+        return <ContextConfigurationView userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} setMediaState={setMediaState} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
       case 4:
         // Added the missing props so the component can read the form data
         return <ProcessingScreen userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={nextStep} onPrev={prevStep} />;

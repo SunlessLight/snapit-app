@@ -12,6 +12,7 @@
   "dependencies": {
     "@google/genai": "^1.51.0",
     "axios": "^1.15.2",
+    "browser-image-compression": "^2.0.2",
     "busboy": "^1.6.0",
     "dotenv": "^17.4.2",
     "form-data": "^4.0.5",

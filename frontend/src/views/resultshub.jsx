@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     Share2,
     Download,
@@ -75,13 +75,11 @@ const ContentCard = ({ label, value, field, onUpdate, isEN }) => {
     );
 };
 
-
 // --- Main View Component ---
-export default function ResultsHubView({ userName, appUILanguage, mediaState, aiOutput, setAiOutput, onStartOver }) {
+export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, setAiOutput, onStartOver }) {
     const isEN = appUILanguage === "EN";
     const [sliderValue, setSliderValue] = useState(100);
     const [toastMessage, setToastMessage] = useState(null);
-    const [isProcessingDownload, setIsProcessingDownload] = useState(false); // Added loading state
 
     const originalImgSrc = mediaState.url;
     let aiImgSrc = null;
@@ -104,48 +102,6 @@ export default function ResultsHubView({ userName, appUILanguage, mediaState, ai
         setTimeout(() => setToastMessage(null), 3000);
     };
 
-    const createProcessedBlob = useCallback((src, brightness, contrast, saturation) => {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            // Handle cross-origin if needed (though usually okay with Object URLs)
-            img.crossOrigin = "anonymous";
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = img.width;
-                canvas.height = img.height;
-
-                // 1. Build the filter string to match standard CSS structure
-                // We use the same multiplier formula as the <img> display
-                const filterString = [
-                    `brightness(${brightness * 2}%)`,
-                    `contrast(${contrast * 2}%)`,
-                    `saturate(${saturation * 2}%)`
-                ].join(' ');
-
-                // 2. Set the canvas filter *before* drawing the image
-                if (ctx.filter) { // Check if browser supports canvas filters (most do)
-                    ctx.filter = filterString;
-                } else {
-                    console.warn("Canvas filter not supported on this browser. Falling back to raw image download.");
-                }
-
-                // 3. Bake the image onto the canvas (this actually modifies the pixels)
-                ctx.drawImage(img, 0, 0);
-
-                // 4. Reset filters (standard practice to avoid visual artifacts)
-                ctx.filter = 'none';
-
-                // 5. Convert canvas contents back into a Blob file (JPEG for speed)
-                canvas.toBlob((blob) => {
-                    resolve(blob);
-                }, 'image/jpeg', 0.95); // High quality JPEG
-            };
-            img.onerror = reject;
-            img.src = src; // Triggers the load
-        });
-    }, []);
-
     const handleDownload = async () => {
         const isShowingAI = sliderValue >= 50;
 
@@ -157,55 +113,16 @@ export default function ResultsHubView({ userName, appUILanguage, mediaState, ai
             ? `${cleanName}_SnapIT_AI.png`
             : `${cleanName}_Original.png`;
 
-        if (isShowingAI) {
-            // Scene: AI Image - Standard download (no baking needed, Gemini did it)
-            if (!aiImgSrc) return;
-            const link = document.createElement('a');
-            link.href = aiImgSrc;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } else {
-            // Scene: Original Edit - Baking required (Scenario A)
-            if (!originalImgSrc) return;
+        const targetUrl = isShowingAI ? aiImgSrc : mediaState.processedUrl;
 
-            try {
-                // Inform user processing is happening as baking tall images takes time
-                setIsProcessingDownload(true);
-                showToast(isEN ? "Preparing high quality download..." : "Menyediakan muat turun berkualiti tinggi...");
+        if (!targetUrl) return;
 
-                // 1. Call the baker utility to apply lighting edits permanently
-                const processedBlob = await createProcessedBlob(
-                    originalImgSrc,
-                    mediaState.brightness,
-                    mediaState.contrast,
-                    mediaState.saturation
-                );
-
-                // 2. Create a temporary URL specifically for this processed file
-                const downloadUrl = URL.createObjectURL(processedBlob);
-
-                // 3. Trigger the browser download
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-
-                // 4. Cleanup memory: revoke temporary URL immediately after clicking
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(downloadUrl);
-                    setIsProcessingDownload(false);
-                }, 100);
-
-            } catch (error) {
-                console.error("Error creating baked download:", error);
-                setIsProcessingDownload(false);
-                showToast(isEN ? "Download failed. Please try again." : "Muat turun gagal. Sila cuba lagi.");
-            }
-        }
+        const link = document.createElement('a');
+        link.href = targetUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const handleGlobalShare = async () => {
@@ -314,22 +231,15 @@ export default function ResultsHubView({ userName, appUILanguage, mediaState, ai
                         {/* The "Smart" Single Download Button - Context aware */}
                         <button
                             onClick={handleDownload}
-                            disabled={isProcessingDownload} // Prevent multiple clicks while baking tall images
-                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm disabled:opacity-70 disabled:cursor-wait ${sliderValue >= 50
+                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${sliderValue >= 50
                                 ? 'bg-[#dc2626] text-white hover:brightness-90 md:hover:-translate-y-1'
                                 : 'bg-white border-2 border-gray-200 text-[#1a0f0d] hover:border-gray-300'
                                 }`}
                         >
-                            {isProcessingDownload ? (
-                                <span className="animate-pulse">{isEN ? "Processing..." : "Memproses..."}</span>
-                            ) : (
-                                <>
-                                    <Download size={18} />
-                                    {sliderValue >= 50
-                                        ? (isEN ? "Download Enhanced Image" : "Muat Turun Gambar AI")
-                                        : (isEN ? "Download Original Edit" : "Muat Turun Gambar Asal")}
-                                </>
-                            )}
+                            <Download size={18} />
+                            {sliderValue >= 50
+                                ? (isEN ? "Download Enhanced Image" : "Muat Turun Gambar AI")
+                                : (isEN ? "Download Original Edit" : "Muat Turun Gambar Asal")}
                         </button>
                     </section>
 

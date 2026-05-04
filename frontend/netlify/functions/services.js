@@ -1,11 +1,10 @@
-// services.js
-const { GoogleGenAI, Type } = require('@google/genai');
-const axios = require('axios');
-const FormData = require('form-data');
+import { GoogleGenAI, Type } from '@google/genai';
+import axios from 'axios';
+import FormData from 'form-data';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-async function generateMarketingCopy(imageBuffer, mimeType, params) {
+export async function generateMarketingCopy(imageBuffer, mimeType, params) {
     const { dishName, price, outputLanguage, backgroundVibe } = params;
 
     const prompt = `
@@ -31,18 +30,16 @@ async function generateMarketingCopy(imageBuffer, mimeType, params) {
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: [
-            // FIX: Defect 3 - Explicitly structured text part
-            { text: prompt },
+            { text: prompt }, //[cite: 2]
             {
                 inlineData: {
-                    data: imageBuffer.toString("base64"),
+                    data: imageBuffer.toString("base64"), //[cite: 2]
                     mimeType: mimeType
                 }
             }
         ],
-        // FIX: Defect 4 - Removed unsupported 'signal' parameter
         config: {
-            responseMimeType: "application/json",
+            responseMimeType: "application/json", //[cite: 2]
             responseSchema: {
                 type: Type.OBJECT,
                 properties: {
@@ -51,42 +48,36 @@ async function generateMarketingCopy(imageBuffer, mimeType, params) {
                     caption: { type: Type.STRING },
                     backgroundPrompt: { type: Type.STRING }
                 },
-                required: ["title", "description", "caption", "backgroundPrompt"]
+                required: ["title", "description", "caption", "backgroundPrompt"] //[cite: 2]
             }
         }
     });
 
-    // FIX: Defect 5 - Validate existence of text before parsing to handle safety blocks
-    if (!response || !response.text) {
+    if (!response || !response.text) { //[cite: 2]
         throw new Error("AI generation blocked by safety settings or returned an empty response.");
     }
 
-    const cleanText = response.text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    const cleanText = response.text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim(); //[cite: 2]
     return JSON.parse(cleanText);
 }
 
-async function processImageBackground(imageBuffer, originalName, backgroundPrompt, abortSignal) {
+export async function processImageBackground(imageBuffer, originalName, backgroundPrompt, abortSignal) {
     const formData = new FormData();
-    formData.append('imageFile', imageBuffer, { filename: originalName || 'upload.png' });
-    formData.append('background.prompt', backgroundPrompt);
-    formData.append('referenceBox', 'originalImage');
-    formData.append('background.expandPrompt.mode', 'ai.never')
+    formData.append('imageFile', imageBuffer, { filename: originalName || 'upload.png' }); //[cite: 2]
+    formData.append('background.prompt', backgroundPrompt); //[cite: 2]
+    formData.append('referenceBox', 'originalImage'); //[cite: 2]
+    formData.append('background.expandPrompt.mode', 'ai.never'); //[cite: 2]
 
     const response = await axios.post(process.env.IMAGE_PROCESSING_API_URL, formData, {
         headers: {
-            'Content-Type': `multipart/form-data; boundary=${formData.getBoundary()}`,
-            'x-api-key': `${process.env.IMAGE_PROCESSING_API_KEY}`,
-            'pr-ai-background-model-version': `background-studio-beta-2025-03-17`,
+            'Content-Type': `multipart/form-data; boundary=${formData.getBoundary()}`, //[cite: 2]
+            'x-api-key': `${process.env.IMAGE_PROCESSING_API_KEY}`, //[cite: 2]
+            'pr-ai-background-model-version': `background-studio-beta-2025-03-17`, //[cite: 2]
         },
-        responseType: 'arraybuffer',
-        timeout: 15000,
-        signal: abortSignal
+        responseType: 'arraybuffer', //[cite: 2]
+        timeout: 15000, //[cite: 2]
+        signal: abortSignal //[cite: 2]
     });
 
-    return Buffer.from(response.data, 'binary').toString('base64');
+    return Buffer.from(response.data, 'binary').toString('base64'); //[cite: 2]
 }
-
-module.exports = {
-    generateMarketingCopy,
-    processImageBackground
-};

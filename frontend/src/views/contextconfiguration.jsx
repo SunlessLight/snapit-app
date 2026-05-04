@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles, ArrowLeft, Utensils, CheckCircle2, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import imageCompression from 'browser-image-compression'
 
 // Custom Segmented Control for Language
 const SegmentedControl = ({ options, selected, onChange }) => (
@@ -24,8 +25,102 @@ const SegmentedControl = ({ options, selected, onChange }) => (
     </div>
 );
 
-export default function ContextConfigurationView({ appUILanguage, config, setConfig, onNext, onPrev }) {
+const createProcessedBlob = (src, brightness, contrast, saturation) => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        // Handle cross-origin if needed (though usually okay with Object URLs)
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // 1. Build the filter string to match standard CSS structure
+            // We use the same multiplier formula as the <img> display
+            const filterString = [
+                `brightness(${brightness * 2}%)`,
+                `contrast(${contrast * 2}%)`,
+                `saturate(${saturation * 2}%)`
+            ].join(' ');
+
+            // 2. Set the canvas filter *before* drawing the image
+            if (ctx.filter) { // Check if browser supports canvas filters (most do)
+                ctx.filter = filterString;
+            } else {
+                console.warn("Canvas filter not supported on this browser. Falling back to raw image download.");
+            }
+
+            // 3. Bake the image onto the canvas (this actually modifies the pixels)
+            ctx.drawImage(img, 0, 0);
+
+            // 4. Reset filters (standard practice to avoid visual artifacts)
+            ctx.filter = 'none';
+
+            // 5. Convert canvas contents back into a Blob file (JPEG for speed)
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/jpeg', 0.95); // High quality JPEG
+        };
+        img.onerror = reject;
+        img.src = src; // Triggers the load
+    });
+};
+
+export default function ContextConfigurationView({ appUILanguage, config, setConfig, onNext, onPrev, mediaState, setMediaState }) {
     const isEN = appUILanguage === "EN";
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const prepareFinalImage = async () => {
+            // Skip if we already processed it or if there's no file
+            if (!mediaState.file || mediaState.processedFile) return;
+
+            try {
+                // 1. Bake the CSS filters into a new Blob
+                const bakedBlob = await createProcessedBlob(
+                    mediaState.url,
+                    mediaState.brightness,
+                    mediaState.contrast,
+                    mediaState.saturation
+                );
+
+                // 2. Compress the baked image
+                const options = {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1200,
+                    useWebWorker: true,
+                    initialQuality: 0.85
+                };
+                const compressedFile = await imageCompression(bakedBlob, options);
+                const compressedUrl = URL.createObjectURL(compressedFile);
+
+                if (isMounted) {
+                    // 3. Save silently to global state
+                    setMediaState(prev => ({
+                        ...prev,
+                        processedFile: compressedFile,
+                        processedUrl: compressedUrl
+                    }));
+                }
+            } catch (error) {
+                console.error("Background processing failed:", error);
+                // Fallback to the raw file if compression fails
+                if (isMounted) {
+                    setMediaState(prev => ({
+                        ...prev,
+                        processedFile: prev.file,
+                        processedUrl: prev.url
+                    }));
+                }
+            }
+        };
+
+        prepareFinalImage();
+
+        return () => { isMounted = false; };
+    }, [mediaState.file, mediaState.brightness, mediaState.contrast, mediaState.saturation]);
 
     // Options matching our new frictionless architecture
     const languageOptions = ["English", "Bahasa Melayu", "Local Style"];
@@ -69,6 +164,9 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
         (config.price?.trim() !== "" && config.price !== undefined) &&
         (config.outputLanguage !== "") &&
         (config.backgroundVibe !== "");
+
+
+
 
     return (
         <div className="w-full pb-12 bg-[#fff8f6] text-[#1a0f0d] font-sans">

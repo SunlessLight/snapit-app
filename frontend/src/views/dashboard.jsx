@@ -3,7 +3,7 @@ import heic2any from 'heic2any';
 import { PRO_TIPS } from '../constants';
 import { Camera, ArrowRight, X, Loader2, UploadCloud } from 'lucide-react';
 
-export default function DashboardView({ userName, appUILanguage, setAppUILanguage, onImageSelect, onImageRemove, mediaState, onNext }) {
+export default function DashboardView({ appUILanguage, setAppUILanguage, onImageSelect, onImageRemove, mediaState, onNext }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef(null);

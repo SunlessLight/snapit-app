@@ -8,8 +8,6 @@ const LOADING_TEXTS = {
 
 const FETCH_TIMEOUT_MS = 45000;
 
-// Pre-calculate random values for the glister effect outside the component
-// to prevent the sparkles from jumping around on every text re-render.
 const sparkles = Array.from({ length: 30 }).map(() => ({
     top: `${Math.random() * 100}%`,
     left: `${Math.random() * 100}%`,
@@ -32,7 +30,7 @@ export default function ProcessingScreen({
     const isEN = appUILanguage === "EN";
     const currentTexts = isEN ? LOADING_TEXTS.EN : LOADING_TEXTS.MY;
 
-    const selectedFile = mediaState.file || null;
+    const selectedFile = mediaState.processedFile || mediaState.file || null;
     const dishName = marketingConfig?.dishName || "";
     const price = marketingConfig?.price || "";
     const outputLanguage = marketingConfig?.outputLanguage || "";
@@ -166,106 +164,23 @@ export default function ProcessingScreen({
     return (
         <div className="h-full w-full relative overflow-hidden bg-transparent flex flex-col items-center justify-center px-8">
 
-            {/* Background Container */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#f8f9fa]">
+            {/* Background Container - Replaced with Veo Video */}
+            <div className="absolute inset-0 pointer-events-none z-0 bg-[#f8f9fa]">
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover opacity-90"
+                >
+                    {/* Modern browsers prefer WebM for better compression/quality */}
+                    <source src="/assets/veo-background.webm" type="video/webm" />
+                    {/* MP4 as a fallback for older iOS devices */}
+                    <source src="/assets/veo-background.mp4" type="video/mp4" />
+                </video>
 
-                {/* 1. Vibrant Rose Blob (Top Left -> Sweeps Right/Down) */}
-                <motion.div
-                    animate={{
-                        x: ["0vw", "20vw", "-10vw", "0vw"],
-                        y: ["0vh", "-10vh", "15vh", "0vh"],
-                        scale: [1, 1.4, 0.8, 1],
-                        rotate: [0, 90, 180, 360]
-                    }}
-                    transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-rose-400/50 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
-                />
-
-                {/* 2. Bright Yellow Blob (Top Right -> Sweeps Left/Down) */}
-                <motion.div
-                    animate={{
-                        x: ["0vw", "-25vw", "10vw", "0vw"],
-                        y: ["0vh", "20vh", "-15vh", "0vh"],
-                        scale: [1, 0.8, 1.3, 1],
-                        rotate: [360, 240, 120, 0]
-                    }}
-                    transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-yellow-400/50 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
-                />
-
-                {/* 3. Deep Purple Blob (Bottom Left -> Sweeps Right/Up) */}
-                <motion.div
-                    animate={{
-                        x: ["0vw", "30vw", "-15vw", "0vw"],
-                        y: ["0vh", "-25vh", "10vh", "0vh"],
-                        scale: [0.9, 1.5, 1, 0.9],
-                        rotate: [0, -180, -360]
-                    }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute bottom-[-10%] left-[-10%] w-[55vw] h-[55vw] bg-purple-500/40 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
-                />
-
-                {/* 4. Emerald Green Blob (Bottom Right -> Sweeps Left/Up) */}
-                <motion.div
-                    animate={{
-                        x: ["0vw", "-20vw", "25vw", "0vw"],
-                        y: ["0vh", "-30vh", "15vh", "0vh"],
-                        scale: [1.1, 0.8, 1.4, 1.1],
-                        rotate: [0, 180, 360]
-                    }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-emerald-400/40 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
-                />
-
-                {/* 5. Sunset Orange Blob (Center -> Breathes and orbits) */}
-                <motion.div
-                    animate={{
-                        x: ["-10vw", "15vw", "-10vw"],
-                        y: ["-10vh", "15vh", "-10vh"],
-                        scale: [0.8, 1.6, 0.8],
-                        rotate: [0, 360]
-                    }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[20%] left-[20%] w-[60vw] h-[60vw] bg-orange-400/40 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
-                />
-
-                {/* 6. Cyan Flow Blob (Center Right -> Drifts freely) */}
-                <motion.div
-                    animate={{
-                        x: ["15vw", "-20vw", "15vw"],
-                        y: ["15vh", "-15vh", "15vh"],
-                        scale: [1.2, 0.7, 1.2],
-                        rotate: [360, 0]
-                    }}
-                    transition={{ duration: 19, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[30%] right-[10%] w-[40vw] h-[40vw] bg-cyan-400/30 rounded-full mix-blend-multiply filter blur-[80px] md:blur-[120px]"
-                />
-
-                {/* The Glister / Sparkle Overlay */}
-                <div className="absolute inset-0 z-10 opacity-60">
-                    {sparkles.map((sparkle, i) => (
-                        <motion.div
-                            key={i}
-                            className="absolute bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.8)]"
-                            style={{
-                                top: sparkle.top,
-                                left: sparkle.left,
-                                width: `${sparkle.size}px`,
-                                height: `${sparkle.size}px`,
-                            }}
-                            animate={{
-                                opacity: [0, 1, 0],
-                                scale: [0, 1.5, 0],
-                            }}
-                            transition={{
-                                duration: sparkle.duration,
-                                repeat: Infinity,
-                                delay: sparkle.delay,
-                                ease: "easeInOut"
-                            }}
-                        />
-                    ))}
-                </div>
+                {/* Optional: A very subtle white overlay to ensure the loading text remains readable */}
+                <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px]" />
             </div>
 
             {/* The Foreground UI */}
