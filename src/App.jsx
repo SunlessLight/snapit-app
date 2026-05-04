@@ -88,10 +88,6 @@ export default function App() {
   const activeUrls = useRef({ url: null, processedUrl: null });
 
   useEffect(() => {
-    activeUrl.current = mediaState.url;
-  }, [mediaState.url]);
-
-  useEffect(() => {
     activeUrls.current = {
       url: mediaState.url,
       processedUrl: mediaState.processedUrl

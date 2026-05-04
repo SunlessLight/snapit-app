@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Sparkles, ArrowLeft, Utensils, CheckCircle2, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import imageCompression from 'browser-image-compression'
 

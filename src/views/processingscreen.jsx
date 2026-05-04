@@ -6,15 +6,7 @@ const LOADING_TEXTS = {
     MY: ["Memproses data...", "Menambah perisa AI...", "Menyediakan poster digital...", "Sentuhan terakhir..."]
 };
 
-const FETCH_TIMEOUT_MS = 45000;
-
-const sparkles = Array.from({ length: 30 }).map(() => ({
-    top: `${Math.random() * 100}%`,
-    left: `${Math.random() * 100}%`,
-    size: Math.random() * 4 + 2,
-    delay: Math.random() * 4,
-    duration: Math.random() * 2 + 2
-}));
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function ProcessingScreen({
     appUILanguage,
@@ -32,6 +24,7 @@ export default function ProcessingScreen({
 
     const selectedFile = mediaState.processedFile || mediaState.file || null;
     const dishName = marketingConfig?.dishName || "";
+
     const price = marketingConfig?.price || "";
     const outputLanguage = marketingConfig?.outputLanguage || "";
     const backgroundVibe = marketingConfig?.backgroundVibe || "";
@@ -56,22 +49,19 @@ export default function ProcessingScreen({
         };
     }, [error, currentTexts.length]);
 
-    // 2. Network Request & Lifecycle Management
+    // 2. New Asynchronous Polling Logic
     useEffect(() => {
         let isMounted = true;
+        let pollTimer = null;
         setError(null);
-
-        const abortController = new AbortController();
-        let timeoutId;
-        let isTimeoutAbort = false;
 
         const generateProAssets = async () => {
             try {
-
                 if (!selectedFile) {
                     throw new Error(isEN ? "Critical Error: No image payload found." : "Ralat Kritikal: Tiada fail gambar dijumpai.");
                 }
 
+                // Prepare Data
                 const formData = new FormData();
                 formData.append('image', selectedFile, 'snapit-upload.png');
                 formData.append('dishName', dishName);
@@ -79,50 +69,49 @@ export default function ProcessingScreen({
                 formData.append('outputLanguage', outputLanguage);
                 formData.append('backgroundVibe', backgroundVibe);
 
-                timeoutId = setTimeout(() => {
-                    isTimeoutAbort = true;
-                    abortController.abort();
-                }, FETCH_TIMEOUT_MS);
-
-
-                const response = await fetch('/.netlify/functions/generate-pro-assets', {
+                // STEP 1: Initial POST to start the job
+                const response = await fetch(`${API_BASE_URL}/api/generate`, {
                     method: 'POST',
                     body: formData,
-                    signal: abortController.signal
                 });
-
-
-                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => null);
-                    const backendMessage = errorData?.error || `Status: ${response.status}`;
-                    throw new Error(`${isEN ? "Server Error" : "Ralat Pelayan"}: ${backendMessage}`);
+                    throw new Error(errorData?.error || `Server Error: ${response.status}`);
                 }
 
-                const result = await response.json();
+                const { jobId } = await response.json();
 
-                if (!isMounted) return;
+                // STEP 2: Start Polling the status endpoint
+                pollTimer = setInterval(async () => {
+                    try {
+                        const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
 
-                if (result.success && result.data) {
-                    setAiOutput(result.data);
-                    onComplete();
-                } else {
-                    throw new Error(result.message || (isEN ? "Backend returned an invalid data structure." : "Struktur data tidak sah dari pelayan."));
-                }
+                        if (!statusRes.ok) throw new Error("Failed to check job status.");
+
+                        const job = await statusRes.json();
+
+                        if (!isMounted) return;
+
+                        if (job.status === 'completed') {
+                            clearInterval(pollTimer);
+                            setAiOutput(job.data);
+                            onComplete();
+                        } else if (job.status === 'failed') {
+                            clearInterval(pollTimer);
+                            throw new Error(job.error || "AI Generation failed.");
+                        }
+                        // If status is 'processing', it just waits for the next 3s interval
+                    } catch (pollErr) {
+                        if (isMounted) {
+                            clearInterval(pollTimer);
+                            setError(pollErr.message);
+                        }
+                    }
+                }, 3000); // Poll every 3 seconds
 
             } catch (err) {
                 if (!isMounted) return;
-
-                if (err.name === 'AbortError') {
-                    if (isTimeoutAbort) {
-                        setError(isEN ? "The server took too long to respond. Please try again." : "Pelayan mengambil masa yang terlalu lama. Sila cuba lagi.");
-                    } else {
-                        console.info('Process aborted: Component unmounted cleanly.');
-                    }
-                    return;
-                }
-
                 console.error("API Error:", err);
                 setError(err.message || (isEN ? "An unexpected network error occurred." : "Ralat rangkaian yang tidak dijangka berlaku."));
             }
@@ -132,8 +121,7 @@ export default function ProcessingScreen({
 
         return () => {
             isMounted = false;
-            clearTimeout(timeoutId);
-            abortController.abort();
+            if (pollTimer) clearInterval(pollTimer);
         };
     }, [selectedFile, dishName, price, outputLanguage, backgroundVibe, isEN, setAiOutput, onComplete]);
 
@@ -160,31 +148,48 @@ export default function ProcessingScreen({
         );
     }
 
-    // 4. Loading State UI (Upgraded Apple Vibe + Mesh Gradient + Glister)
+    // 4. Loading State UI (Upgraded Apple Vibe + Framer Motion Mesh Gradient)
     return (
-        <div className="h-full w-full relative overflow-hidden bg-transparent flex flex-col items-center justify-center px-8">
+        <div className="h-full w-full relative overflow-hidden bg-white flex flex-col items-center justify-center px-8">
 
-            {/* Background Container - Replaced with Veo Video */}
-            <div className="absolute inset-0 pointer-events-none z-0 bg-[#f8f9fa]">
-                <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover opacity-90"
-                >
-                    {/* Modern browsers prefer WebM for better compression/quality */}
-                    <source src="/assets/veo-background.webm" type="video/webm" />
-                    {/* MP4 as a fallback for older iOS devices */}
-                    <source src="/assets/veo-background.mp4" type="video/mp4" />
-                </video>
+            {/* Framer Motion Mesh Gradient Background */}
+            <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                {/* Cyan / Blue glow */}
+                <motion.div
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        x: ["0%", "10%", "0%"],
+                        y: ["0%", "20%", "0%"],
+                    }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-cyan-300/40 blur-[100px]"
+                />
 
-                {/* Optional: A very subtle white overlay to ensure the loading text remains readable */}
-                <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px]" />
+                {/* Magenta / Pink glow */}
+                <motion.div
+                    animate={{
+                        scale: [1, 1.3, 1],
+                        x: ["0%", "-15%", "0%"],
+                        y: ["0%", "-10%", "0%"],
+                    }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                    className="absolute top-[10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-fuchsia-300/40 blur-[120px]"
+                />
+
+                {/* Sunset Orange / Peach glow */}
+                <motion.div
+                    animate={{
+                        scale: [1, 1.1, 1],
+                        x: ["0%", "20%", "0%"],
+                        y: ["0%", "-20%", "0%"],
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+                    className="absolute bottom-[-20%] left-[20%] w-[70%] h-[70%] rounded-full bg-orange-300/40 blur-[130px]"
+                />
             </div>
 
             {/* The Foreground UI */}
-            <div className="relative z-20 flex flex-col items-center w-full max-w-sm backdrop-blur-md bg-white/10 p-8 rounded-3xl shadow-2xl border border-white/20">
+            <div className="relative z-20 flex flex-col items-center w-full max-w-sm backdrop-blur-xl bg-white/40 p-8 rounded-3xl shadow-2xl border border-white/60">
 
                 {/* Subtle Changing Text */}
                 <div className="h-8 mb-6 flex items-center justify-center">
