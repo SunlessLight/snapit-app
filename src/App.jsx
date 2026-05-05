@@ -144,7 +144,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#fff8f6] overflow-hidden relative">
+    <div className="w-full h-[100dvh] bg-[#fff8f6] overflow-hidden relative">
 
       {/* Floating Global Header wrapper */}
       <div

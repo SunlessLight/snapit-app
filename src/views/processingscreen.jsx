@@ -148,71 +148,48 @@ export default function ProcessingScreen({
         );
     }
 
-    // 4. Loading State UI (Upgraded Apple Vibe + Framer Motion Mesh Gradient)
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-[#fff8f6] px-6">
+        <div className="h-full w-full relative overflow-hidden bg-[#fafafa] flex flex-col items-center justify-center px-8">
 
-            {/* Framer Motion Mesh Gradient Background */}
-            <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-                {/* Cyan / Blue glow */}
+            {/* The Animated Gradient Background - Subtle & Pearlescent */}
+            <div className="absolute inset-0 pointer-events-none z-0 opacity-60">
                 <motion.div
-                    animate={{
-                        scale: [1, 1.2, 1],
-                        x: ["0%", "10%", "0%"],
-                        y: ["0%", "20%", "0%"],
+                    animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+                    transition={{ duration: 20, ease: "linear", repeat: Infinity }}
+                    className="w-full h-full"
+                    style={{
+                        // Ultra-light, barely-there pastels: Soft Sky, Pale Violet, Ghost Fuchsia, Warm Pearl
+                        background: "linear-gradient(-45deg, #e0f2fe, #ede9fe, #fae8ff, #fff7ed)",
+                        backgroundSize: "400% 400%"
                     }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-cyan-300/40 blur-[100px]"
-                />
-
-                {/* Magenta / Pink glow */}
-                <motion.div
-                    animate={{
-                        scale: [1, 1.3, 1],
-                        x: ["0%", "-15%", "0%"],
-                        y: ["0%", "-10%", "0%"],
-                    }}
-                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                    className="absolute top-[10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-fuchsia-300/40 blur-[120px]"
-                />
-
-                {/* Sunset Orange / Peach glow */}
-                <motion.div
-                    animate={{
-                        scale: [1, 1.1, 1],
-                        x: ["0%", "20%", "0%"],
-                        y: ["0%", "-20%", "0%"],
-                    }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 4 }}
-                    className="absolute bottom-[-20%] left-[20%] w-[70%] h-[70%] rounded-full bg-orange-300/40 blur-[130px]"
                 />
             </div>
 
             {/* The Foreground UI */}
-            <div className="relative z-20 flex flex-col items-center w-full max-w-sm backdrop-blur-xl bg-white/40 p-8 rounded-3xl shadow-2xl border border-white/60">
+            <div className="relative z-20 flex flex-col items-center w-full max-w-sm backdrop-blur-md bg-white/50 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/80">
 
                 {/* Subtle Changing Text */}
                 <div className="h-8 mb-6 flex items-center justify-center">
                     <AnimatePresence mode="wait">
                         <motion.p
                             key={currentIndex}
-                            initial={{ opacity: 0, filter: "blur(8px)", y: 10 }}
-                            animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                            exit={{ opacity: 0, filter: "blur(8px)", y: -10 }}
-                            transition={{ duration: 0.5, ease: "easeOut" }}
-                            className="text-base font-semibold text-gray-800 tracking-wide text-center m-0"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className="text-base font-medium text-gray-600 tracking-wide text-center m-0"
                         >
                             {currentTexts[currentIndex]}
                         </motion.p>
                     </AnimatePresence>
                 </div>
 
-                {/* Upgraded Apple-Style Loading Bar */}
-                <div className="w-56 h-1.5 bg-black/5 rounded-full overflow-hidden shadow-inner relative">
+                {/* Refined Loading Bar */}
+                <div className="w-56 h-1 bg-gray-100 rounded-full overflow-hidden relative">
                     <motion.div
                         animate={{ x: ["-100%", "200%"] }}
-                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                        className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-gray-800/60 to-transparent rounded-full"
+                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                        className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-gray-400/30 to-transparent rounded-full"
                     />
                 </div>
             </div>
