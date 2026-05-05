@@ -153,7 +153,7 @@ export default function App() {
       >
         {currentStep > 0 && (
           <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
-            <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAPPUILanguage} />
+            <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
             <DynamicTimeline currentStep={currentStep} isEN={appUILanguage === "EN"} />
           </div>
         )}
