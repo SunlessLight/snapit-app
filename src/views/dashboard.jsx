@@ -3,12 +3,12 @@ import heic2any from 'heic2any';
 import { PRO_TIPS } from '../constants';
 import { Camera, ArrowRight, X, Loader2, UploadCloud } from 'lucide-react';
 
-export default function DashboardView({ appUILanguage, setAppUILanguage, onImageSelect, onImageRemove, mediaState, onNext }) {
+export default function DashboardView({ appUILanguage, onImageSelect, onImageRemove, mediaState, onNext }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
-
+    const isEN = appUILanguage === "EN";
     const hasImage = mediaState.file !== null;
 
     // --- Pro Tips Carousel Logic ---
@@ -101,8 +101,8 @@ export default function DashboardView({ appUILanguage, setAppUILanguage, onImage
 
                     {/* Hero Text - Margins tightened */}
                     <div className="text-center mb-3 md:mb-6 flex-shrink-0">
-                        <h2 className="font-serif text-xl md:text-3xl font-extrabold mb-1 md:mb-3">Drop a photo</h2>
-                        <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">We'll polish it and turn it into something worth sharing.</p>
+                        <h2 className="font-serif text-xl md:text-3xl font-extrabold mb-1 md:mb-3">{isEN ? "Drop a Photo" : "Muat Naik Gambar"}</h2>
+                        <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">{isEN ? "We'll polish it and turn it into something worth sharing." : "Biar kami cantikkan gambar ni, sedia untuk dikongsi."}</p>
                     </div>
 
                     {/* THE SHOCK ABSORBER: Drop Zone Box */}
@@ -142,12 +142,12 @@ export default function DashboardView({ appUILanguage, setAppUILanguage, onImage
                                     <div className="w-10 h-10 md:w-16 md:h-16 mx-auto rounded-xl md:rounded-2xl flex items-center justify-center mb-2 md:mb-5 bg-red-50 text-[#dc2626] md:group-hover:scale-110 transition-transform">
                                         <UploadCloud size={24} className="md:w-8 md:h-8" />
                                     </div>
-                                    <p className="font-serif text-xl font-semibold mb-1 hidden sm:block">Drag & drop your photo</p>
-                                    <p className="font-serif text-base font-semibold mb-2 sm:hidden">Tap to upload a photo</p>
+                                    <p className="font-serif text-xl font-semibold mb-1 hidden sm:block">{isEN ? "Drag & drop your photo" : "Tarik & letak gambar anda"}</p>
+                                    <p className="font-serif text-base font-semibold mb-2 sm:hidden">{isEN ? "Press to upload photo" : "Tekan untuk muat naik gambar"}</p>
 
-                                    <p className="text-xs md:text-sm opacity-60 mb-4 hidden sm:block">or click to browse — JPG, PNG, WEBP</p>
+                                    <p className="text-xs md:text-sm opacity-60 mb-4 hidden sm:block">{isEN ? "or click to browse — JPG, PNG, WEBP" : "atau klik untuk pilih gambar — JPG, PNG, WEBP"}</p>
                                     <span className="bg-[#dc2626] text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[10px] md:text-sm font-semibold inline-flex items-center gap-2 shadow-sm">
-                                        Choose photo
+                                        {isEN ? "Choose Photo" : "Pilih Gambar"}
                                     </span>
                                 </>
                             )}
@@ -155,7 +155,7 @@ export default function DashboardView({ appUILanguage, setAppUILanguage, onImage
 
                         {/* Privacy text moved here, tightly spaced */}
                         <p className="text-center text-[9px] md:text-xs opacity-50 mt-1.5 md:mt-3 flex-shrink-0 hidden md:block">
-                            Your photo stays in your browser. Nothing is uploaded anywhere.
+                            {isEN ? "Your photo stays in your browser. Nothing is uploaded anywhere." : "Gambar diproses terus dalam browser anda. Tiada apa yang dimuat naik ke Internet."}
                         </p>
                     </div>
 

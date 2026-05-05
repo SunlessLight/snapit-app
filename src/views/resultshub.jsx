@@ -170,7 +170,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                         {isEN ? "Your Marketing Assets" : "Aset Pemasaran Anda"}
                     </h1>
                     <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">
-                        {isEN ? "Ready to copy, download, and share." : "Sedia untuk disalin, dimuat turun, dan dikongsi."}
+                        {isEN ? "Ready to copy, download, and share." : "Dah siap! Sedia untuk di-copy, muat turun, dan kongsi."}
                     </p>
                 </div>
 
@@ -225,7 +225,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                             </div>
 
                             <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                {isEN ? "AI Enhanced" : "Dijana AI"}
+                                {isEN ? "AI Enhanced" : "Hasil Sentuhan AI"}
                             </div>
                             <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
                                 {isEN ? "Original" : "Asal"}
@@ -288,7 +288,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                         className="w-full sm:w-auto bg-white border-2 border-gray-200 text-[#1a0f0d] hover:border-gray-300 hover:bg-gray-50 text-sm md:text-base font-semibold py-3 md:py-3.5 px-6 rounded-full flex items-center justify-center gap-2 transition-all"
                     >
                         <Sparkles size={16} />
-                        {isEN ? "Start New Dish" : "Mula Hidangan Baru"}
+                        {isEN ? "Start New Dish" : "Muat Hidangan Baru"}
                     </button>
                 </div>
             </div>

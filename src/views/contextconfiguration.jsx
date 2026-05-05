@@ -180,7 +180,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                         {isEN ? "The Details" : "Butiran"}
                     </h1>
                     <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-                        {isEN ? "Tell us what you're selling" : "Beritahu kami apa yang anda jual"}
+                        {isEN ? "Tell us what you're selling" : "Kongsi sikit apa yang anda jual"}
                     </p>
                 </div>
             </header>
@@ -300,7 +300,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                 `}
                 >
                     <Sparkles className={`w-5 h-5 ${isReady ? "animate-pulse" : ""}`} />
-                    {isEN ? "Generate Magic" : "Jana Magik"}
+                    {isEN ? "Generate" : "Jana"}
                 </button>
             </div>
 

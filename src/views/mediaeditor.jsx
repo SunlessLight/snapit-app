@@ -164,7 +164,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
                     {/* Hero Text */}
                     <div className="text-center md:mb-6 flex-shrink-0">
-                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">Let's make it pop.</h2>
+                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">{isEN ? "Let's make it pop." : "Jom kasi cun."}</h2>
                     </div>
 
                     {/* FIX 2: The Main Container Card. Allowed it to expand its height dynamically by changing flex properties. */}
@@ -241,7 +241,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                                 <Sparkles size={20} className="md:w-6 md:h-6" stroke={activeImg.isEnhanced ? "url(#gemini-gradient)" : "#6b7280"} />
                                             </button>
                                             <span className="text-[9px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                                {isEN ? "AI Enhance" : "AI Cantik"}
+                                                {isEN ? "AI Enhance" : "Peningkatan AI"}
                                             </span>
                                         </div>
 
