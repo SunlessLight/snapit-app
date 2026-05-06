@@ -49,41 +49,82 @@ export default function ProcessingScreen({
         };
     }, [error, currentTexts.length]);
 
-    // 2. MOCK Asynchronous Polling Logic for UI Testing
+    // 2. New Asynchronous Polling Logic
     useEffect(() => {
         let isMounted = true;
+        let pollTimer = null;
         setError(null);
 
-        /* ==========================================
-           COMMENT OUT THE REAL API LOGIC
-        =============================================
         const generateProAssets = async () => {
             try {
-                if (!selectedFile) throw new Error(...);
-                // ... all the fetch and polling logic ...
+                if (!selectedFile) {
+                    throw new Error(isEN ? "Critical Error: No image payload found." : "Ralat Kritikal: Tiada fail gambar dijumpai.");
+                }
+
+                // Prepare Data
+                const formData = new FormData();
+                formData.append('image', selectedFile, 'snapit-upload.png');
+                formData.append('dishName', dishName);
+                formData.append('price', price);
+                formData.append('outputLanguage', outputLanguage);
+                formData.append('backgroundVibe', backgroundVibe);
+
+                // STEP 1: Initial POST to start the job
+                const response = await fetch(`${API_BASE_URL}/api/generate`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(errorData?.error || `Server Error: ${response.status}`);
+                }
+
+                const { jobId } = await response.json();
+
+                // STEP 2: Start Polling the status endpoint
+                pollTimer = setInterval(async () => {
+                    try {
+                        const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
+
+                        if (!statusRes.ok) throw new Error("Failed to check job status.");
+
+                        const job = await statusRes.json();
+
+                        if (!isMounted) return;
+
+                        if (job.status === 'completed') {
+                            clearInterval(pollTimer);
+                            setAiOutput(job.data);
+                            onComplete();
+                        } else if (job.status === 'failed') {
+                            clearInterval(pollTimer);
+                            throw new Error(job.error || "AI Generation failed.");
+                        }
+                        // If status is 'processing', it just waits for the next 3s interval
+                    } catch (pollErr) {
+                        if (isMounted) {
+                            clearInterval(pollTimer);
+                            setError(pollErr.message);
+                        }
+                    }
+                }, 3000); // Poll every 3 seconds
+
             } catch (err) {
-                // ... error handling ...
+                if (!isMounted) return;
+                console.error("API Error:", err);
+                setError(err.message || (isEN ? "An unexpected network error occurred." : "Ralat rangkaian yang tidak dijangka berlaku."));
             }
         };
+
         generateProAssets();
-        ============================================= */
-
-        // ADD THIS TIMER INSTEAD
-        // This gives you 10 seconds to watch the animation before moving to the next screen
-        const timer = setTimeout(() => {
-            if (!isMounted) return;
-
-            // You can optionally inject dummy data here if your ResultsHubView needs it to prevent crashing
-            // setAiOutput({ /* dummy data */ }); 
-
-            onComplete();
-        }, 10000); // 10000ms = 10 seconds
 
         return () => {
             isMounted = false;
-            clearTimeout(timer); // Cleanup the timer when unmounting
+            if (pollTimer) clearInterval(pollTimer);
         };
-    }, [onComplete]); // Stripped down dependencies to just what is needed for the mock
+    }, [selectedFile, dishName, price, outputLanguage, backgroundVibe, isEN, setAiOutput, onComplete]);
+
 
     // 3. Error State UI
     if (error) {
