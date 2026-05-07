@@ -74,7 +74,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
     const handleAutoEnhance = () => {
         if (!activeImg.isEnhanced) {
             setCachedValues({ b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation });
-            setMediaState(prev => ({ ...prev, brightness: 65, contrast: 70, saturation: 75, isEnhanced: true }));
+            setMediaState(prev => ({ ...prev, brightness: 53, contrast: 54, saturation: 58, isEnhanced: true }));
         } else {
             setMediaState(prev => ({
                 ...prev, brightness: cachedValues.b, contrast: cachedValues.c, saturation: cachedValues.s, isEnhanced: false
