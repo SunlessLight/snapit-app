@@ -162,7 +162,7 @@ export default function ProcessingScreen({
                     className="w-full h-full"
                     style={{
                         // Ultra-light, barely-there pastels: Soft Sky, Pale Violet, Ghost Fuchsia, Warm Pearl
-                        background: "linear-gradient(-45deg, #e0f2fe, #ede9fe, #ffedd5, #d1fae5, #fae8ff, #fff7ed, )",
+                        background: "linear-gradient(-45deg, #e0f2fe, #ede9fe, #ffedd5, #d1fae5, #fae8ff, #fff7ed)",
                         backgroundSize: "300% 300%"
                     }}
                 />
