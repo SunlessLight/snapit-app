@@ -28,6 +28,7 @@ export default function ProcessingScreen({
     const price = marketingConfig?.price || "";
     const outputLanguage = marketingConfig?.outputLanguage || "";
     const backgroundVibe = marketingConfig?.backgroundVibe || "";
+    const generateBackground = marketingConfig?.generateBackground ?? true;
 
     console.log("Current File:", mediaState.file)
 
@@ -68,6 +69,7 @@ export default function ProcessingScreen({
                 formData.append('price', price);
                 formData.append('outputLanguage', outputLanguage);
                 formData.append('backgroundVibe', backgroundVibe);
+                formData.append('generateBackground', generateBackground);
 
                 // STEP 1: Initial POST to start the job
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {
@@ -153,15 +155,15 @@ export default function ProcessingScreen({
         <div className="h-full w-full relative overflow-hidden bg-[#fafafa] flex flex-col items-center justify-center px-8">
 
             {/* The Animated Gradient Background - Subtle & Pearlescent */}
-            <div className="absolute inset-0 pointer-events-none z-0 opacity-60">
+            <div className="absolute inset-0 pointer-events-none z-0 opacity-70">
                 <motion.div
                     animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                    transition={{ duration: 20, ease: "linear", repeat: Infinity }}
+                    transition={{ duration: 8, ease: "linear", repeat: Infinity }}
                     className="w-full h-full"
                     style={{
                         // Ultra-light, barely-there pastels: Soft Sky, Pale Violet, Ghost Fuchsia, Warm Pearl
-                        background: "linear-gradient(-45deg, #e0f2fe, #ede9fe, #fae8ff, #fff7ed)",
-                        backgroundSize: "400% 400%"
+                        background: "linear-gradient(-45deg, #e0f2fe, #ede9fe, #ffedd5, #d1fae5, #fae8ff, #fff7ed, )",
+                        backgroundSize: "300% 300%"
                     }}
                 />
             </div>

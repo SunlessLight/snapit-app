@@ -86,15 +86,14 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
     const [toastMessage, setToastMessage] = useState(null);
 
     const originalImgSrc = mediaState.url;
+    const hasAiImage = Boolean(aiOutput?.generatedImageBase64);
     let aiImgSrc = null;
 
-    if (aiOutput?.generatedImageBase64) {
+    if (hasAiImage) {
         const hasDataPrefix = aiOutput.generatedImageBase64.startsWith('data:image');
         aiImgSrc = hasDataPrefix
             ? aiOutput.generatedImageBase64
             : `data:image/jpeg;base64,${aiOutput.generatedImageBase64}`;
-    } else {
-        aiImgSrc = aiOutput?.imageUrl;
     }
 
     const handleUpdateText = (key, value) => {
@@ -107,7 +106,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
     };
 
     const handleDownload = async () => {
-        const isShowingAI = sliderValue >= 50;
+        const isShowingAI = hasAiImage && sliderValue >= 50;
 
         const cleanName = aiOutput.title
             ? aiOutput.title.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')
@@ -131,9 +130,10 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
     const handleGlobalShare = async () => {
         const combinedText = `${aiOutput.title}\n\n${aiOutput.description}\n\n${aiOutput.caption}`;
+        const targetShareUrl = hasAiImage ? aiImgSrc : mediaState.processedUrl;
 
         try {
-            const response = await fetch(aiImgSrc);
+            const response = await fetch(targetShareUrl);
             const blob = await response.blob();
             const file = new File([blob], 'SnapIT_Result.png', { type: 'image/png' });
 
@@ -180,6 +180,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                     {/* LEFT COLUMN: The Before/After Comparison Slider */}
                     <section className="w-full lg:w-1/2 flex flex-col gap-4 md:gap-5">
                         <div className="relative w-full max-h-[500px] aspect-[4/5] md:aspect-square bg-white border border-gray-100 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm group">
+
                             {originalImgSrc && (
                                 <div className="absolute inset-0 w-full h-full pointer-events-none">
                                     <img
@@ -194,56 +195,62 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                                 </div>
                             )}
 
-                            {aiImgSrc && (
-                                <div
-                                    className="absolute inset-0 w-full h-full bg-[#fff8f6] pointer-events-none"
-                                    style={{ clipPath: `inset(0 ${100 - sliderValue}% 0 0)` }}
-                                >
-                                    <img
-                                        src={aiImgSrc}
-                                        alt="AI Enhanced"
-                                        className="w-full h-full object-contain"
+                            {hasAiImage && (
+                                <>
+                                    <div
+                                        className="absolute inset-0 w-full h-full bg-[#fff8f6] pointer-events-none"
+                                        style={{ clipPath: `inset(0 ${100 - sliderValue}% 0 0)` }}
+                                    >
+                                        <img
+                                            src={aiImgSrc}
+                                            alt="AI Enhanced"
+                                            className="w-full h-full object-contain"
+                                        />
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0" max="100"
+                                        value={sliderValue}
+                                        onChange={(e) => setSliderValue(e.target.value)}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
                                     />
-                                </div>
+
+                                    <div
+                                        className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_rgba(0,0,0,0.3)] z-10 pointer-events-none"
+                                        style={{ left: `${sliderValue}%` }}
+                                    >
+                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 text-gray-700">
+                                            <ChevronsLeftRight size={18} />
+                                        </div>
+                                    </div>
+
+                                    <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
+                                        {isEN ? "AI Enhanced" : "Hasil Sentuhan AI"}
+                                    </div>
+                                    <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
+                                        {isEN ? "Original" : "Asal"}
+                                    </div>
+                                </>
                             )}
 
-                            <input
-                                type="range"
-                                min="0" max="100"
-                                value={sliderValue}
-                                onChange={(e) => setSliderValue(e.target.value)}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
-                            />
-
-                            <div
-                                className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_rgba(0,0,0,0.3)] z-10 pointer-events-none"
-                                style={{ left: `${sliderValue}%` }}
-                            >
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 text-gray-700">
-                                    <ChevronsLeftRight size={18} />
-                                </div>
-                            </div>
-
-                            <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                {isEN ? "AI Enhanced" : "Hasil Sentuhan AI"}
-                            </div>
-                            <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                {isEN ? "Original" : "Asal"}
-                            </div>
                         </div>
 
                         {/* The "Smart" Single Download Button - Context aware */}
                         <button
                             onClick={handleDownload}
-                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${sliderValue >= 50
+                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${hasAiImage && sliderValue >= 50
                                 ? 'bg-[#dc2626] text-white hover:brightness-90 md:hover:-translate-y-1'
                                 : 'bg-white border-2 border-gray-200 text-[#1a0f0d] hover:border-gray-300'
                                 }`}
                         >
                             <Download size={18} />
-                            {sliderValue >= 50
-                                ? (isEN ? "Download Enhanced Image" : "Muat Turun Gambar AI")
-                                : (isEN ? "Download Original Edit" : "Muat Turun Gambar Asal")}
+                            {hasAiImage ?
+                                (sliderValue >= 50
+                                    ? (isEN ? "Download Enhanced Image" : "Muat Turun Gambar AI")
+                                    : (isEN ? "Download Original Edit" : "Muat Turun Gambar Asal")
+                                )
+                                : (isEN ? "Download Image" : "Muat Turun Gambar")
+                            }
                         </button>
                     </section>
 

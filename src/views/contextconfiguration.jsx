@@ -129,29 +129,29 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
         {
             id: 'kopitiam',
             label: isEN ? 'Kopitiam' : 'Kopitiam',
-            desc: isEN ? 'Marble & local feel' : 'Meja marmar klasik',
+            desc: isEN ? 'Classic marble table' : 'Meja marmar klasik',
             gradient: 'from-slate-100 to-gray-200',
             textColor: 'text-slate-700'
         },
         {
             id: 'cafe',
             label: isEN ? 'Modern Cafe' : 'Kafe Moden',
-            desc: isEN ? 'Wood & bright light' : 'Kayu & cahaya terang',
+            desc: isEN ? 'Warm wooden table' : 'Meja kayu & terang',
             gradient: 'from-amber-50 to-orange-100',
             textColor: 'text-amber-800'
         },
         {
             id: 'street',
             label: isEN ? 'Street Food' : 'Pasar Malam',
-            desc: isEN ? 'Dark with neon bokeh' : 'Gelap & lampu neon',
+            desc: isEN ? 'Night market vibes' : 'Suasana pasar malam',
             gradient: 'from-gray-800 to-slate-900',
             textColor: 'text-white'
         },
         {
             id: 'premium',
             label: isEN ? 'Premium' : 'Premium',
-            desc: isEN ? 'Black slate & moody' : 'Batu hitam eksklusif',
-            gradient: 'from-zinc-900 to-black',
+            desc: isEN ? 'Clean & elegant' : 'Bersih & eksklusif',
+            gradient: 'from-zinc-900 to-black', // You can keep the dark gradient for the UI button, it looks premium.
             textColor: 'text-zinc-200'
         }
     ];
@@ -163,7 +163,8 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
         (config.dishName?.trim() !== "" && config.dishName !== undefined) &&
         (config.price?.trim() !== "" && config.price !== undefined) &&
         (config.outputLanguage !== "") &&
-        (config.backgroundVibe !== "");
+        (config.backgroundVibe !== "") &&
+        (!config.generateBackground || config.backgroundVibe !== "");
 
     return (
         <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
@@ -243,11 +244,39 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
 
                     {/* Card 3: Background Vibe */}
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <ImageIcon className="w-5 h-5 text-[#dc2626]" />
-                            <h2 className="font-serif font-bold text-lg">{isEN ? "Background Vibe" : "Suasana Latar"}</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <ImageIcon className="w-5 h-5 text-[#dc2626]" />
+                                <h2 className="font-serif font-bold text-lg">{isEN ? "Change Background" : "Tukar Latar Belakang"}</h2>
+                            </div>
+
+                            {/* New Segmented Toggle (Matches Language Toggle Style) */}
+                            <div className="flex bg-gray-100/80 p-1 rounded-full border border-gray-200 items-center">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('generateBackground', true)}
+                                    className={`px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all duration-200 ${config.generateBackground
+                                        ? 'bg-white text-gray-800 shadow-sm border border-gray-200/50'
+                                        : 'text-gray-400 hover:text-gray-600 bg-transparent'
+                                        }`}
+                                >
+                                    {isEN ? "ON" : "BUKA"}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('generateBackground', false)}
+                                    className={`px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all duration-200 ${!config.generateBackground
+                                        ? 'bg-white text-gray-800 shadow-sm border border-gray-200/50'
+                                        : 'text-gray-400 hover:text-gray-600 bg-transparent'
+                                        }`}
+                                >
+                                    {isEN ? "OFF" : "TUTUP"}
+                                </button>
+                            </div>
+
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+
+                        <div className={`grid grid-cols-2 gap-3 transition-opacity duration-300 ${!config.generateBackground ? 'opacity-40 pointer-events-none grayscale-[0.5]' : 'opacity-100'} `}>
                             {backgroundOptions.map((bg) => {
                                 const isSelected = config.backgroundVibe === bg.id;
                                 return (

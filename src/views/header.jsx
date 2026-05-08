@@ -8,7 +8,7 @@ export default function Header({ snapitLogo, userName, appUILanguage, setAppUILa
             <div className="flex items-center gap-2 md:gap-3">
                 <img src={snapitLogo} alt="SnapIT" className="w-24 h-12 md:w-24 md:h-24 object-contain" />
                 <div className="hidden sm:block">
-                    <p className="text-sm opacity-70">Photos, elevated.</p>
+                    <p className="font-serif text-sm opacity-70">Photos, elevated.</p>
                 </div>
             </div>
 

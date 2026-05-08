@@ -23,7 +23,7 @@ const DEFAULT_MEDIA_STATE = {
   processedUrl: null,
 };
 // const DEFAULT_MARKETING_CONFIG = { dishName: "Nasi Lemak", price: "RM 12", outputLanguage: "english", backgroundVibe: "Premium" };
-const DEFAULT_MARKETING_CONFIG = { dishName: "", price: "", outputLanguage: "", backgroundVibe: "" };
+const DEFAULT_MARKETING_CONFIG = { dishName: "", price: "", outputLanguage: "", backgroundVibe: "", generateBackground: true };
 const DEFAULT_AI_OUTPUT = {
   title: "🔥 Sedap Giler Nasi Lemak Ayam Goreng Berempah!",
   description: "Crispy on the outside, juicy on the inside! Our signature Nasi Lemak comes with freshly fried Ayam Berempah, fragrant coconut rice, and our secret recipe sambal that hits all the right notes.",
