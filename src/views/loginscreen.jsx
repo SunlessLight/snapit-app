@@ -6,6 +6,7 @@ import snapitLogo from '../assets/snapit-logo.png';
 
 const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
   const [isRegister, setIsRegister] = useState(authMode === 'register');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +26,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
     try {
       let result;
       if (isRegister) {
-        result = await authService.register(email, password);
+        result = await authService.register(email, password, username);
         if (!result.user) {
           throw new Error('An account with this email may already exist. Try logging in instead.');
         }
@@ -33,7 +34,11 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
         result = await authService.login(email, password);
       }
 
-      onSuccess({ id: result.user.id, email: result.user.email });
+      onSuccess({
+        id: result.user.id,
+        email: result.user.email,
+        username: result.user.user_metadata?.username ?? username,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -118,6 +123,23 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Username Input (register only) */}
+          {isRegister && (
+            <div>
+              <label className="block text-xs md:text-sm font-semibold text-[#1a0f0d] mb-2 uppercase tracking-wider">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Your display name"
+                disabled={loading}
+                className="w-full py-3.5 px-4 rounded-2xl bg-gray-50 border border-gray-200 text-[#1a0f0d] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#dc2626] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+          )}
+
           {/* Email Input */}
           <div>
             <label className="block text-xs md:text-sm font-semibold text-[#1a0f0d] mb-2 uppercase tracking-wider">
@@ -170,7 +192,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
           {/* Submit Button */}
           <motion.button
             type="submit"
-            disabled={loading || !email || !password}
+            disabled={loading || !email || !password || (isRegister && !username)}
             whileHover={{ scale: loading ? 1 : 1.02 }}
             whileTap={{ scale: loading ? 1 : 0.98 }}
             className="w-full py-3.5 px-4 rounded-2xl bg-[#dc2626] text-white font-bold uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700"

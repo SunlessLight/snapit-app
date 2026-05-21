@@ -5,8 +5,8 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 )
 
-export const register = async (email, password) => {
-  const { data, error } = await supabase.auth.signUp({ email, password })
+export const register = async (email, password, username) => {
+  const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { username } } })
   if (error) throw new Error(error.message)
   return data
 }

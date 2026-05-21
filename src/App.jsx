@@ -53,8 +53,11 @@ export default function App() {
   const [marketingConfig, setMarketingConfig] = useState(DEFAULT_MARKETING_CONFIG);
   const [aiOutput, setAiOutput] = useState(DEFAULT_AI_OUTPUT);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const headerWrapperRef = useRef(null);
   const lastScrollY = useRef(0);
   const isProcessingScreen = currentStep === 4;
+  const showHeader = isAuthenticated && currentStep > 0;
 
   const nextStep = useCallback(() => setCurrentStep((prev) => Math.min(prev + 1, 5)), []);
   const prevStep = useCallback(() => setCurrentStep((prev) => Math.max(prev - 1, 1)), []);
@@ -107,19 +110,22 @@ export default function App() {
     authService.getSession().then((session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setUserName(session?.user?.user_metadata?.username || '');
       setAuthLoading(false);
     });
 
     const { data: { subscription } } = authService.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setUserName(session?.user?.user_metadata?.username || '');
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   // Handle login success — session/user already updated by onAuthStateChange
-  const handleLoginSuccess = useCallback(() => {
+  const handleLoginSuccess = useCallback(({ username }) => {
+    setUserName(username || '');
     setShowLoginScreen(false);
     setAuthMode('login');
     setCurrentStep(1);
@@ -171,6 +177,17 @@ export default function App() {
     lastScrollY.current = 0;
   }, [currentStep]);
 
+  // Measure actual header height so content padding tracks it dynamically
+  useEffect(() => {
+    const el = headerWrapperRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setHeaderHeight(entry.contentRect.height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const renderView = () => {
     // PROTECT ALL ROUTES: If user is not authenticated
     if (!isAuthenticated) {
@@ -208,10 +225,11 @@ export default function App() {
 
       {/* Floating Global Header wrapper */}
       <div
+        ref={headerWrapperRef}
         className={`absolute top-0 left-0 w-full z-50 transition-transform duration-500 ease-in-out pointer-events-none ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
           }`}
       >
-        {isAuthenticated && currentStep > 0 && (
+        {showHeader && (
           <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
             <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
             <DynamicTimeline currentStep={currentStep} isEN={appUILanguage === "EN"} />
@@ -228,10 +246,11 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            onScroll={handleScroll} // <-- Attach scroll listener here
+            onScroll={handleScroll}
+            style={showHeader && !isProcessingScreen ? { paddingTop: headerHeight } : undefined}
             className={`w-full h-full pb-safe transition-[padding] duration-300 ${isProcessingScreen
-              ? 'overflow-hidden pt-0' // Processing Screen: Locks scroll, scales to 100vh, slides under header
-              : 'overflow-y-auto pt-[130px]' // Normal Screens: Scrollable, padded down
+              ? 'overflow-hidden pt-0'
+              : 'overflow-y-auto'
               }`}
           >
             {renderView()}
