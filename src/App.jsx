@@ -7,10 +7,12 @@ import MediaEditorView from './views/mediaeditor';
 import ContextConfigurationView from './views/contextconfiguration';
 import ProcessingScreen from './views/processingscreen';
 import ResultsHubView from './views/resultshub';
+import LoginScreen from './views/loginscreen';
 import foodImage from './assets/food_image.webp';
 import snapitLogo from './assets/snapit-logo.png';
 import Header from './views/header';
 import DynamicTimeline from './views/dynamictimeline';
+import { authService } from './services/authService';
 
 const DEFAULT_MEDIA_STATE = {
   file: null,
@@ -34,6 +36,15 @@ const DEFAULT_AI_OUTPUT = {
 };
 
 export default function App() {
+  // ========== AUTH STATE ==========
+  const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showLoginScreen, setShowLoginScreen] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const isAuthenticated = !!session;
+
+  // ========== APP STATE ==========
   const [currentStep, setCurrentStep] = useState(0);
   const [userName, setUserName] = useState(' ');
   const [appUILanguage, setAppUILanguage] = useState("EN");
@@ -48,9 +59,15 @@ export default function App() {
   const nextStep = useCallback(() => setCurrentStep((prev) => Math.min(prev + 1, 5)), []);
   const prevStep = useCallback(() => setCurrentStep((prev) => Math.max(prev - 1, 1)), []);
 
-  const handleStart = useCallback((name) => {
-    setUserName(name);
-    setCurrentStep(1);
+  // Navigate to LoginScreen from WelcomeScreen
+  const handleShowLogin = useCallback(() => {
+    setAuthMode('login');
+    setShowLoginScreen(true);
+  }, []);
+
+  const handleShowSignUp = useCallback(() => {
+    setAuthMode('register');
+    setShowLoginScreen(true);
   }, []);
 
   const handleImageSelect = useCallback((file, previewUrl) => {
@@ -85,6 +102,38 @@ export default function App() {
     setCurrentStep(1);
   }, []);
 
+  // ========== AUTH EFFECTS ==========
+  useEffect(() => {
+    authService.getSession().then((session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = authService.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Handle login success — session/user already updated by onAuthStateChange
+  const handleLoginSuccess = useCallback(() => {
+    setShowLoginScreen(false);
+    setAuthMode('login');
+    setCurrentStep(1);
+  }, []);
+
+  // Handle logout
+  const handleLogout = useCallback(async () => {
+    await authService.logout();
+    setShowLoginScreen(false);
+    setAuthMode('login');
+    setCurrentStep(0);
+  }, []);
+
+  // ========== URL CLEANUP ==========
   const activeUrls = useRef({ url: null, processedUrl: null });
 
   useEffect(() => {
@@ -123,9 +172,20 @@ export default function App() {
   }, [currentStep]);
 
   const renderView = () => {
+    // PROTECT ALL ROUTES: If user is not authenticated
+    if (!isAuthenticated) {
+      // Show LoginScreen if requested, otherwise show WelcomeScreen
+      if (showLoginScreen) {
+        return <LoginScreen onSuccess={handleLoginSuccess} authMode={authMode} />;
+      }
+      return <WelcomeScreen onLogin={handleShowLogin} onSignUp={handleShowSignUp} />;
+    }
+
+    // User is authenticated - show workflow
     switch (currentStep) {
       case 0:
-        return <WelcomeScreen onStart={handleStart} />;
+        // This shouldn't happen (authenticated users skip to step 1), but keep as fallback
+        return <WelcomeScreen onLogin={handleShowLogin} onSignUp={handleShowSignUp} />;
       case 1:
         // We can pass nextStep directly since we removed the array index wrapper
         return <DashboardView userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
@@ -151,7 +211,7 @@ export default function App() {
         className={`absolute top-0 left-0 w-full z-50 transition-transform duration-500 ease-in-out pointer-events-none ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
           }`}
       >
-        {currentStep > 0 && (
+        {isAuthenticated && currentStep > 0 && (
           <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
             <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
             <DynamicTimeline currentStep={currentStep} isEN={appUILanguage === "EN"} />
