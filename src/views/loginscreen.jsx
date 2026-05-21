@@ -26,6 +26,9 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
       let result;
       if (isRegister) {
         result = await authService.register(email, password);
+        if (!result.user) {
+          throw new Error('An account with this email may already exist. Try logging in instead.');
+        }
       } else {
         result = await authService.login(email, password);
       }
