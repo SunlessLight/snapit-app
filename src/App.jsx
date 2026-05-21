@@ -112,6 +112,7 @@ export default function App() {
       setUser(session?.user ?? null);
       setUserName(session?.user?.user_metadata?.username || '');
       setAuthLoading(false);
+      if (session) setCurrentStep(1);
     });
 
     const { data: { subscription } } = authService.onAuthStateChange((_event, session) => {

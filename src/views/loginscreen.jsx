@@ -59,7 +59,6 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-8"
       >
         <img
           src={snapitLogo}
@@ -73,7 +72,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="text-sm md:text-base text-gray-600 mb-8 text-center max-w-xs"
+        className="text-sm md:text-base text-gray-600 mb-4 text-center max-w-xs"
       >
         Create stunning food marketing content in seconds
       </motion.p>
