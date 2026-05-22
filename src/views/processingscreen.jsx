@@ -29,6 +29,10 @@ export default function ProcessingScreen({
     const outputLanguage = marketingConfig?.outputLanguage || "";
     const backgroundVibe = marketingConfig?.backgroundVibe || "";
     const generateBackground = marketingConfig?.generateBackground ?? true;
+    const isMediaEditorPro = !!mediaState?.isMediaEditorPro;
+    const isContextPro = !!marketingConfig?.isContextPro;
+    const description = marketingConfig?.description || "";
+    const tone = marketingConfig?.tone || "";
 
     console.log("Current File:", mediaState.file)
 
@@ -70,6 +74,10 @@ export default function ProcessingScreen({
                 formData.append('outputLanguage', outputLanguage);
                 formData.append('backgroundVibe', backgroundVibe);
                 formData.append('generateBackground', generateBackground);
+                formData.append('isMediaEditorPro', isMediaEditorPro);
+                formData.append('isContextPro', isContextPro);
+                formData.append('description', description);
+                formData.append('tone', tone);
 
                 // STEP 1: Initial POST to start the job
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {

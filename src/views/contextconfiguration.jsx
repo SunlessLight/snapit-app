@@ -1,34 +1,41 @@
 import React, { useEffect } from 'react';
 import { Sparkles, ArrowLeft, Utensils, CheckCircle2, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import imageCompression from 'browser-image-compression'
+import SegmentedControl from '../components/SegmentedControl';
 
-// Custom Segmented Control for Language
-const SegmentedControl = ({ options, selected, onChange }) => (
-    <div className="flex w-full bg-gray-50/80 p-1.5 rounded-2xl border border-gray-100">
-        {options.map((option) => {
-            const isSelected = selected === option;
-            return (
-                <button
-                    key={option}
-                    type="button"
-                    onClick={() => onChange(option)}
-                    className={`flex-1 py-2.5 px-2 rounded-xl text-sm md:text-base transition-all duration-200 ease-in-out font-sans whitespace-nowrap
-                        ${isSelected
-                            ? "bg-white text-[#dc2626] font-bold shadow-sm border border-gray-200/50"
-                            : "bg-transparent text-gray-500 font-medium hover:text-gray-800"
-                        }`}
-                >
-                    {option}
-                </button>
-            );
-        })}
-    </div>
-);
+// Apply a 3x3 convolution to ImageData in-place (used for sharpness when baking,
+// because canvas ctx.filter = 'url(#...)' is not reliable across browsers).
+const applyConvolution3x3 = (imageData, kernel) => {
+    const { width, height, data } = imageData;
+    const src = new Uint8ClampedArray(data);
+    const k = kernel;
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const dstIdx = (y * width + x) * 4;
+            for (let c = 0; c < 3; c++) {
+                let sum = 0;
+                let ki = 0;
+                for (let ky = -1; ky <= 1; ky++) {
+                    for (let kx = -1; kx <= 1; kx++) {
+                        const srcIdx = ((y + ky) * width + (x + kx)) * 4 + c;
+                        sum += src[srcIdx] * k[ki++];
+                    }
+                }
+                data[dstIdx + c] = Math.max(0, Math.min(255, sum));
+            }
+            // preserve alpha
+            data[dstIdx + 3] = src[dstIdx + 3];
+        }
+    }
+};
 
-const createProcessedBlob = (src, brightness, contrast, saturation) => {
+const createProcessedBlob = (src, mediaState) => {
+    const {
+        brightness, contrast, saturation,
+        isMediaEditorPro, hue = 50, blur = 0, sharpness = 0, vignette = 0
+    } = mediaState;
     return new Promise((resolve, reject) => {
         const img = new Image();
-        // Handle cross-origin if needed (though usually okay with Object URLs)
         img.crossOrigin = "anonymous";
         img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -36,34 +43,59 @@ const createProcessedBlob = (src, brightness, contrast, saturation) => {
             canvas.width = img.width;
             canvas.height = img.height;
 
-            // 1. Build the filter string to match standard CSS structure
-            // We use the same multiplier formula as the <img> display
-            const filterString = [
+            const filterParts = [
                 `brightness(${brightness * 2}%)`,
                 `contrast(${contrast * 2}%)`,
                 `saturate(${saturation * 2}%)`
-            ].join(' ');
-
-            // 2. Set the canvas filter *before* drawing the image
-            if (ctx.filter) { // Check if browser supports canvas filters (most do)
-                ctx.filter = filterString;
-            } else {
-                console.warn("Canvas filter not supported on this browser. Falling back to raw image download.");
+            ];
+            if (isMediaEditorPro) {
+                const hueDeg = (hue - 50) * 3.6;
+                const blurPx = blur / 25;
+                filterParts.push(`hue-rotate(${hueDeg}deg)`);
+                if (blurPx > 0) filterParts.push(`blur(${blurPx}px)`);
             }
 
-            // 3. Bake the image onto the canvas (this actually modifies the pixels)
-            ctx.drawImage(img, 0, 0);
+            if (ctx.filter) {
+                ctx.filter = filterParts.join(' ');
+            } else {
+                console.warn("Canvas filter not supported on this browser.");
+            }
 
-            // 4. Reset filters (standard practice to avoid visual artifacts)
+            ctx.drawImage(img, 0, 0);
             ctx.filter = 'none';
 
-            // 5. Convert canvas contents back into a Blob file (JPEG for speed)
+            // Pro: sharpness via JS convolution (portable across browsers)
+            if (isMediaEditorPro && sharpness > 0) {
+                const k = sharpness / 100;
+                const kernel = [0, -k, 0, -k, 1 + 4 * k, -k, 0, -k, 0];
+                try {
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    applyConvolution3x3(imageData, kernel);
+                    ctx.putImageData(imageData, 0, 0);
+                } catch (err) {
+                    console.warn("Sharpness bake failed (likely tainted canvas):", err);
+                }
+            }
+
+            // Pro: vignette via radial gradient overlay
+            if (isMediaEditorPro && vignette > 0) {
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const innerR = Math.min(cx, cy) * 0.45;
+                const outerR = Math.sqrt(cx * cx + cy * cy);
+                const gradient = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+                gradient.addColorStop(0, 'rgba(0,0,0,0)');
+                gradient.addColorStop(1, `rgba(0,0,0,${0.85 * (vignette / 100)})`);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
             canvas.toBlob((blob) => {
                 resolve(blob);
-            }, 'image/jpeg', 0.95); // High quality JPEG
+            }, 'image/jpeg', 0.95);
         };
         img.onerror = reject;
-        img.src = src; // Triggers the load
+        img.src = src;
     });
 };
 
@@ -78,13 +110,8 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
             if (!mediaState.file || mediaState.processedFile) return;
 
             try {
-                // 1. Bake the CSS filters into a new Blob
-                const bakedBlob = await createProcessedBlob(
-                    mediaState.url,
-                    mediaState.brightness,
-                    mediaState.contrast,
-                    mediaState.saturation
-                );
+                // 1. Bake all filters (basic + Pro if enabled) into a new Blob
+                const bakedBlob = await createProcessedBlob(mediaState.url, mediaState);
 
                 // 2. Compress the baked image
                 const options = {
@@ -120,7 +147,10 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
         prepareFinalImage();
 
         return () => { isMounted = false; };
-    }, [mediaState.file, mediaState.brightness, mediaState.contrast, mediaState.saturation]);
+    }, [
+        mediaState.file, mediaState.brightness, mediaState.contrast, mediaState.saturation,
+        mediaState.isMediaEditorPro, mediaState.hue, mediaState.blur, mediaState.sharpness, mediaState.vignette
+    ]);
 
     // Options matching our new frictionless architecture
     const languageOptions = ["English", "Bahasa Melayu", "Local Style"];
@@ -157,6 +187,16 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
     ];
 
     const handleUpdate = (key, value) => setConfig(prev => ({ ...prev, [key]: value }));
+    const isPro = !!config.isContextPro;
+
+    const toneOptions = [
+        { id: 'professional', label: isEN ? 'Professional' : 'Profesional' },
+        { id: 'funny', label: isEN ? 'Funny' : 'Lucu' },
+        { id: 'casual', label: isEN ? 'Casual' : 'Santai' },
+        { id: 'luxury', label: isEN ? 'Luxury' : 'Mewah' },
+        { id: 'cozy', label: isEN ? 'Cozy' : 'Mesra' },
+        { id: 'modern', label: isEN ? 'Modern' : 'Moden' },
+    ];
 
     // Strict Validation: Check if ALL fields have values
     const isReady =
@@ -164,25 +204,34 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
         (config.price?.trim() !== "" && config.price !== undefined) &&
         (config.outputLanguage !== "") &&
         (config.backgroundVibe !== "") &&
-        (!config.generateBackground || config.backgroundVibe !== "");
+        (!config.generateBackground || config.backgroundVibe !== "") &&
+        (!isPro || (config.description?.trim() !== "" && config.tone !== ""));
 
     return (
         <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
             {/* Header Area (Now flows naturally) */}
-            <header className="pb-safe px-6 flex items-center">
+            <header className="pb-safe px-6 flex items-center gap-3">
                 <button
                     onClick={onPrev}
-                    className="p-2.5 bg-white rounded-full shadow-sm border border-gray-100 text-gray-800 hover:text-[#dc2626] transition-colors active:scale-95"
+                    className="p-2.5 bg-white rounded-full shadow-sm border border-gray-100 text-gray-800 hover:text-[#dc2626] transition-colors active:scale-95 flex-shrink-0"
                 >
                     <ArrowLeft size={22} />
                 </button>
-                <div className="flex-1 text-center pr-10">
+                <div className="flex-1 text-center">
                     <h1 className="text-xl md:text-2xl font-serif font-extrabold text-gray-900">
                         {isEN ? "The Details" : "Butiran"}
                     </h1>
                     <p className="text-xs md:text-sm text-gray-500 mt-0.5">
                         {isEN ? "Tell us what you're selling" : "Kongsi sikit apa yang anda jual"}
                     </p>
+                </div>
+                <div className="flex-shrink-0">
+                    <SegmentedControl
+                        options={['Standard', 'Pro']}
+                        selected={isPro ? 'Pro' : 'Standard'}
+                        onChange={(val) => handleUpdate('isContextPro', val === 'Pro')}
+                        size="sm"
+                    />
                 </div>
             </header>
 
@@ -241,6 +290,56 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                             onChange={(val) => handleUpdate('outputLanguage', val)}
                         />
                     </div>
+
+                    {/* Pro Card: Description + Tone (only when Pro ON) */}
+                    {isPro && (
+                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Sparkles className="w-5 h-5 text-[#dc2626]" />
+                                <h2 className="font-serif font-bold text-lg">{isEN ? "Pro Context" : "Konteks Pro"}</h2>
+                                <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-[#dc2626] bg-red-50 px-2 py-0.5 rounded-full">PRO</span>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                                        {isEN ? "Description" : "Penerangan"}
+                                    </label>
+                                    <textarea
+                                        rows={3}
+                                        placeholder={isEN
+                                            ? "e.g., Handmade pan-mee with anchovies sourced daily from Penang"
+                                            : "cth., Mee tarik dengan ikan bilis dari Penang setiap hari"}
+                                        value={config.description || ""}
+                                        onChange={(e) => handleUpdate('description', e.target.value)}
+                                        className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium resize-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                                        {isEN ? "Tone" : "Nada"}
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {toneOptions.map((opt) => {
+                                            const isSelected = config.tone === opt.id;
+                                            return (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => handleUpdate('tone', opt.id)}
+                                                    className={`py-2.5 px-2 rounded-xl text-xs md:text-sm font-semibold border-[1.5px] transition-all active:scale-95 ${isSelected
+                                                        ? 'border-[#dc2626] text-[#dc2626] bg-red-50/50'
+                                                        : 'border-gray-200 text-gray-500 bg-white hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Card 3: Background Vibe */}
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">

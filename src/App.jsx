@@ -20,12 +20,49 @@ const DEFAULT_MEDIA_STATE = {
   brightness: 50,
   contrast: 50,
   saturation: 50,
+  isMediaEditorPro: false,
+  hue: 50,
+  blur: 0,
+  sharpness: 0,
+  vignette: 0,
   isEnhanced: false,
   processedFile: null,
   processedUrl: null,
 };
 // const DEFAULT_MARKETING_CONFIG = { dishName: "Nasi Lemak", price: "RM 12", outputLanguage: "english", backgroundVibe: "Premium" };
-const DEFAULT_MARKETING_CONFIG = { dishName: "", price: "", outputLanguage: "", backgroundVibe: "", generateBackground: true };
+const DEFAULT_MARKETING_CONFIG = {
+  dishName: "",
+  price: "",
+  outputLanguage: "",
+  backgroundVibe: "",
+  generateBackground: true,
+  isContextPro: false,
+  description: "",
+  tone: "",
+};
+
+const MEDIA_STATE_STORAGE_KEY = 'snapit:mediaState';
+const MARKETING_CONFIG_STORAGE_KEY = 'snapit:marketingConfig';
+
+// Strip non-serializable fields (File objects, blob: URLs) before persisting
+const pickSerializableMediaState = (state) => {
+  const { file, processedFile, url, processedUrl, ...rest } = state;
+  return {
+    ...rest,
+    url: typeof url === 'string' && !url.startsWith('blob:') ? url : null,
+  };
+};
+
+const loadFromStorage = (key, defaults) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw);
+    return { ...defaults, ...parsed };
+  } catch {
+    return defaults;
+  }
+};
 const DEFAULT_AI_OUTPUT = {
   title: "🔥 Sedap Giler Nasi Lemak Ayam Goreng Berempah!",
   description: "Crispy on the outside, juicy on the inside! Our signature Nasi Lemak comes with freshly fried Ayam Berempah, fragrant coconut rice, and our secret recipe sambal that hits all the right notes.",
@@ -49,8 +86,20 @@ export default function App() {
   const [userName, setUserName] = useState(' ');
   const [appUILanguage, setAppUILanguage] = useState("EN");
 
-  const [mediaState, setMediaState] = useState(DEFAULT_MEDIA_STATE);
-  const [marketingConfig, setMarketingConfig] = useState(DEFAULT_MARKETING_CONFIG);
+  const [mediaState, setMediaState] = useState(() => {
+    const stored = loadFromStorage(MEDIA_STATE_STORAGE_KEY, DEFAULT_MEDIA_STATE);
+    // File and blob URLs can't be restored from storage; fall back to defaults for those
+    return {
+      ...stored,
+      file: null,
+      processedFile: null,
+      url: stored.url || foodImage,
+      processedUrl: null,
+    };
+  });
+  const [marketingConfig, setMarketingConfig] = useState(() =>
+    loadFromStorage(MARKETING_CONFIG_STORAGE_KEY, DEFAULT_MARKETING_CONFIG)
+  );
   const [aiOutput, setAiOutput] = useState(DEFAULT_AI_OUTPUT);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -103,6 +152,10 @@ export default function App() {
     setMarketingConfig(DEFAULT_MARKETING_CONFIG);
     setAiOutput(DEFAULT_AI_OUTPUT);
     setCurrentStep(1);
+    try {
+      localStorage.removeItem(MEDIA_STATE_STORAGE_KEY);
+      localStorage.removeItem(MARKETING_CONFIG_STORAGE_KEY);
+    } catch { /* ignore */ }
   }, []);
 
   // ========== AUTH EFFECTS ==========
@@ -139,6 +192,22 @@ export default function App() {
     setAuthMode('login');
     setCurrentStep(0);
   }, []);
+
+  // ========== PERSISTENCE ==========
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        MEDIA_STATE_STORAGE_KEY,
+        JSON.stringify(pickSerializableMediaState(mediaState))
+      );
+    } catch { /* storage full or disabled */ }
+  }, [mediaState]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MARKETING_CONFIG_STORAGE_KEY, JSON.stringify(marketingConfig));
+    } catch { /* storage full or disabled */ }
+  }, [marketingConfig]);
 
   // ========== URL CLEANUP ==========
   const activeUrls = useRef({ url: null, processedUrl: null });
@@ -221,8 +290,21 @@ export default function App() {
     }
   };
 
+  // Sharpness convolution kernel: identity at k=0, classic sharpen as k→1
+  const sharpenK = (mediaState.sharpness ?? 0) / 100;
+  const sharpenKernel = `0 ${-sharpenK} 0  ${-sharpenK} ${1 + 4 * sharpenK} ${-sharpenK}  0 ${-sharpenK} 0`;
+
   return (
     <div className="w-full h-[100dvh] bg-[#fff8f6] overflow-hidden relative">
+
+      {/* Global SVG sharpen filter — referenced by CSS filter: url(#snapit-sharpen) */}
+      <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+        <defs>
+          <filter id="snapit-sharpen">
+            <feConvolveMatrix order="3" kernelMatrix={sharpenKernel} preserveAlpha="true" />
+          </filter>
+        </defs>
+      </svg>
 
       {/* Floating Global Header wrapper */}
       <div

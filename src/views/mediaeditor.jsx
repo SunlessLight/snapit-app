@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     Sparkles,
     SlidersHorizontal,
@@ -10,10 +10,32 @@ import {
     Contrast,
     Droplets,
     Check,
-    RotateCcw
+    RotateCcw,
+    Palette,
+    Aperture,
+    Focus,
+    CircleDot,
+    Maximize,
+    Square,
+    RectangleVertical,
+    RectangleHorizontal,
+    Smartphone,
+    Monitor,
+    Image as ImageIcon
 } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import SegmentedControl from '../components/SegmentedControl';
+
+const ASPECT_RATIOS = [
+    { label: 'Free', value: undefined, icon: Maximize },
+    { label: '1:1', value: 1, icon: Square },
+    { label: '4:5', value: 4 / 5, icon: RectangleVertical },
+    { label: '9:16', value: 9 / 16, icon: Smartphone },
+    { label: '5:4', value: 5 / 4, icon: RectangleHorizontal },
+    { label: '16:9', value: 16 / 9, icon: Monitor },
+    { label: '3:4', value: 3 / 4, icon: ImageIcon },
+];
 
 
 // --- Helper Functions (Preserved from your backend logic) ---
@@ -69,15 +91,55 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
     const isEN = appUILanguage === "EN";
     const activeImg = mediaState;
+    const isPro = !!activeImg.isMediaEditorPro;
+
+    // Crop aspect: Pro ON defaults to Free (undefined), Pro OFF locks to 4/5
+    const [cropAspect, setCropAspect] = useState(isPro ? undefined : 4 / 5);
+
+    // Snap aspect to 4/5 if user toggles Pro OFF while in crop mode
+    useEffect(() => {
+        if (!isPro && cropAspect !== 4 / 5) {
+            setCropAspect(4 / 5);
+            if (imgRef.current) {
+                const { width, height } = imgRef.current;
+                setCrop(centerAspectCrop(width, height, 4 / 5));
+            }
+        }
+    }, [isPro]);
+
+    const handleAspectChange = (newAspect) => {
+        setCropAspect(newAspect);
+        if (imgRef.current) {
+            const { width, height } = imgRef.current;
+            if (newAspect === undefined) {
+                setCrop(undefined);
+                setCompletedCrop(null);
+            } else {
+                setCrop(centerAspectCrop(width, height, newAspect));
+            }
+        }
+    };
+
+    const handleProToggle = (value) => {
+        const nextPro = value === 'Pro';
+        setMediaState(prev => ({ ...prev, isMediaEditorPro: nextPro }));
+    };
 
     // --- Actions ---
     const handleAutoEnhance = () => {
         if (!activeImg.isEnhanced) {
-            setCachedValues({ b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation });
+            setCachedValues({
+                b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation,
+                h: activeImg.hue, bl: activeImg.blur, sh: activeImg.sharpness, v: activeImg.vignette
+            });
             setMediaState(prev => ({ ...prev, brightness: 53, contrast: 54, saturation: 58, isEnhanced: true }));
         } else {
             setMediaState(prev => ({
-                ...prev, brightness: cachedValues.b, contrast: cachedValues.c, saturation: cachedValues.s, isEnhanced: false
+                ...prev,
+                brightness: cachedValues.b, contrast: cachedValues.c, saturation: cachedValues.s,
+                hue: cachedValues.h ?? prev.hue, blur: cachedValues.bl ?? prev.blur,
+                sharpness: cachedValues.sh ?? prev.sharpness, vignette: cachedValues.v ?? prev.vignette,
+                isEnhanced: false
             }));
             setCachedValues(null);
         }
@@ -116,7 +178,12 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
     const onImageLoad = (e) => {
         const { width, height } = e.currentTarget;
-        setCrop(centerAspectCrop(width, height, 4 / 5));
+        if (cropAspect === undefined) {
+            // Free-form: let user draw their own selection
+            setCrop(undefined);
+        } else {
+            setCrop(centerAspectCrop(width, height, cropAspect));
+        }
     };
 
     const handleReset = () => {
@@ -125,6 +192,10 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
             brightness: 50,
             contrast: 50,
             saturation: 50,
+            hue: 50,
+            blur: 0,
+            sharpness: 0,
+            vignette: 0,
             isEnhanced: false
         }));
         setCachedValues(null);
@@ -132,9 +203,13 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
 
     // Calculate dynamic CSS filters based on 50 being the "Normal" baseline
+    const hueDeg = ((activeImg.hue ?? 50) - 50) * 3.6;
+    const blurPx = (activeImg.blur ?? 0) / 25;
+    const sharpenRef = (activeImg.sharpness ?? 0) > 0 ? ' url(#snapit-sharpen)' : '';
     const imageFilters = {
-        filter: `contrast(${activeImg.contrast / 50}) saturate(${activeImg.saturation / 50}) brightness(${activeImg.brightness / 50})`
+        filter: `contrast(${activeImg.contrast / 50}) saturate(${activeImg.saturation / 50}) brightness(${activeImg.brightness / 50}) hue-rotate(${hueDeg}deg) blur(${blurPx}px)${sharpenRef}`
     };
+    const vignetteOpacity = (activeImg.vignette ?? 0) / 100;
 
     return (
         <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
@@ -162,9 +237,17 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
                 <section className="flex-1 flex flex-col justify-center animate-fade-in w-full min-h-0 max-w-3xl mx-auto pb-2 md:pb-4">
 
-                    {/* Hero Text */}
-                    <div className="text-center md:mb-6 flex-shrink-0">
-                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">{isEN ? "Let's make it pop." : "Jom kasi cun."}</h2>
+                    {/* Hero Text + Pro Toggle */}
+                    <div className="flex items-center justify-between md:mb-6 flex-shrink-0 gap-3">
+                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3 flex-1 text-center md:text-left">{isEN ? "Let's make it pop." : "Jom kasi cun."}</h2>
+                        <div className="flex-shrink-0">
+                            <SegmentedControl
+                                options={['Standard', 'Pro']}
+                                selected={isPro ? 'Pro' : 'Standard'}
+                                onChange={handleProToggle}
+                                size="sm"
+                            />
+                        </div>
                     </div>
 
                     {/* FIX 2: The Main Container Card. Allowed it to expand its height dynamically by changing flex properties. */}
@@ -179,7 +262,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                         crop={crop}
                                         onChange={(_, percentCrop) => setCrop(percentCrop)}
                                         onComplete={(c) => setCompletedCrop(c)}
-                                        aspect={4 / 5}
+                                        aspect={cropAspect}
                                         className="max-h-full flex items-center justify-center"
                                     >
                                         <img
@@ -192,12 +275,23 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                     </ReactCrop>
                                 </div>
                             ) : (
-                                <img
-                                    src={activeImg.url}
-                                    alt="Preview"
-                                    className="max-w-full max-h-full object-contain transition-all duration-300 rounded-md"
-                                    style={imageFilters}
-                                />
+                                <div className="relative max-w-full max-h-full flex items-center justify-center">
+                                    <img
+                                        src={activeImg.url}
+                                        alt="Preview"
+                                        className="max-w-full max-h-full object-contain transition-all duration-300 rounded-md"
+                                        style={imageFilters}
+                                    />
+                                    {vignetteOpacity > 0 && (
+                                        <div
+                                            className="absolute inset-0 rounded-md pointer-events-none"
+                                            style={{
+                                                background: 'radial-gradient(circle, transparent 45%, rgba(0,0,0,0.85) 100%)',
+                                                opacity: vignetteOpacity
+                                            }}
+                                        />
+                                    )}
+                                </div>
                             )}
                         </div>
 
@@ -275,7 +369,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
                                 {/* STATE: ADJUST */}
                                 {controlState === 'ADJUST' && (
-                                    <div className="flex flex-col gap-4 mt-1 md:mt-2 animate-[fadeIn_0.2s_ease]">
+                                    <div className="flex flex-col gap-4 mt-1 md:mt-2 pt-4 animate-[fadeIn_0.2s_ease]">
                                         <div className="flex items-center gap-2 md:gap-3">
                                             <Sun size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
                                             <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Brightness" : "Kecerahan"}</span>
@@ -294,26 +388,87 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                             <input type="range" min="0" max="100" value={activeImg.saturation} onChange={(e) => handleSliderChange('saturation', e.target.value)}
                                                 className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
                                         </div>
+
+                                        {isPro && (
+                                            <>
+                                                <div className="flex items-center gap-2 pt-2 mt-1 border-t border-gray-100">
+                                                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-[#dc2626]">{isEN ? "Pro" : "Pro"}</span>
+                                                    <div className="flex-1 h-px bg-gradient-to-r from-red-100 to-transparent" />
+                                                </div>
+                                                <div className="flex items-center gap-2 md:gap-3">
+                                                    <Palette size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
+                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Hue" : "Warna"}</span>
+                                                    <input type="range" min="0" max="100" value={activeImg.hue ?? 50} onChange={(e) => handleSliderChange('hue', e.target.value)}
+                                                        className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
+                                                </div>
+                                                <div className="flex items-center gap-2 md:gap-3">
+                                                    <Aperture size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
+                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Blur" : "Kabur"}</span>
+                                                    <input type="range" min="0" max="100" value={activeImg.blur ?? 0} onChange={(e) => handleSliderChange('blur', e.target.value)}
+                                                        className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
+                                                </div>
+                                                <div className="flex items-center gap-2 md:gap-3">
+                                                    <Focus size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
+                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Sharpness" : "Ketajaman"}</span>
+                                                    <input type="range" min="0" max="100" value={activeImg.sharpness ?? 0} onChange={(e) => handleSliderChange('sharpness', e.target.value)}
+                                                        className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
+                                                </div>
+                                                <div className="flex items-center gap-2 md:gap-3">
+                                                    <CircleDot size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
+                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Vignette" : "Vignette"}</span>
+                                                    <input type="range" min="0" max="100" value={activeImg.vignette ?? 0} onChange={(e) => handleSliderChange('vignette', e.target.value)}
+                                                        className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 )}
 
                                 {/* STATE: CROP */}
                                 {controlState === 'CROP' && (
-                                    <div className="w-full flex gap-2 md:gap-3 animate-[fadeIn_0.2s_ease]">
-                                        <button
-                                            disabled={isProcessingCrop}
-                                            onClick={() => setControlState('DEFAULT')}
-                                            className="flex-1 px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-colors bg-gray-100 text-gray-600 md:hover:bg-gray-200 active:scale-95"
-                                        >
-                                            {isEN ? "Cancel" : "Batal"}
-                                        </button>
-                                        <button
-                                            disabled={isProcessingCrop}
-                                            onClick={handleApplyCrop}
-                                            className="flex-1 px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-colors bg-[#1a0f0d] text-white shadow-md md:hover:bg-black flex items-center justify-center gap-2 active:scale-95"
-                                        >
-                                            {isProcessingCrop ? <span className="animate-pulse">...</span> : <><Check size={16} className="md:w-[18px] md:h-[18px]" /> {isEN ? "Apply" : "Teruskan"}</>}
-                                        </button>
+                                    <div className="w-full flex flex-col gap-3 animate-[fadeIn_0.2s_ease]">
+                                        {/* Pro aspect-ratio picker */}
+                                        {isPro && (
+                                            <div className="w-full overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                                                <style>{`.snapit-aspect-strip::-webkit-scrollbar { display: none; }`}</style>
+                                                <div className="snapit-aspect-strip flex gap-2 px-1 py-1 min-w-min">
+                                                    {ASPECT_RATIOS.map(({ label, value, icon: Icon }) => {
+                                                        const isSelected = cropAspect === value;
+                                                        return (
+                                                            <button
+                                                                key={label}
+                                                                type="button"
+                                                                onClick={() => handleAspectChange(value)}
+                                                                className={`flex-shrink-0 flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-xl border-[1.5px] transition-all active:scale-95 ${isSelected
+                                                                    ? 'border-[#dc2626] text-[#dc2626] bg-red-50/50'
+                                                                    : 'border-gray-200 text-gray-500 bg-white hover:border-gray-300'
+                                                                    }`}
+                                                                title={label}
+                                                            >
+                                                                <Icon size={16} strokeWidth={2} />
+                                                                <span className="text-[9px] font-semibold tracking-wide">{label}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="w-full flex gap-2 md:gap-3">
+                                            <button
+                                                disabled={isProcessingCrop}
+                                                onClick={() => setControlState('DEFAULT')}
+                                                className="flex-1 px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-colors bg-gray-100 text-gray-600 md:hover:bg-gray-200 active:scale-95"
+                                            >
+                                                {isEN ? "Cancel" : "Batal"}
+                                            </button>
+                                            <button
+                                                disabled={isProcessingCrop}
+                                                onClick={handleApplyCrop}
+                                                className="flex-1 px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-colors bg-[#1a0f0d] text-white shadow-md md:hover:bg-black flex items-center justify-center gap-2 active:scale-95"
+                                            >
+                                                {isProcessingCrop ? <span className="animate-pulse">...</span> : <><Check size={16} className="md:w-[18px] md:h-[18px]" /> {isEN ? "Apply" : "Teruskan"}</>}
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
