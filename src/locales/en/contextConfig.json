@@ -1,0 +1,38 @@
+{
+  "header": {
+    "title": "The Details",
+    "subtitle": "Tell us what you're selling"
+  },
+  "dish": {
+    "heading": "What's the dish?",
+    "nameLabel": "Dish Name",
+    "namePlaceholder": "e.g., Nasi Lemak Ayam Goreng",
+    "priceLabel": "Price"
+  },
+  "language": {
+    "heading": "Caption Language"
+  },
+  "pro": {
+    "heading": "Pro Context",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "e.g., Handmade pan-mee with anchovies sourced daily from Penang",
+    "toneLabel": "Tone",
+    "tones": {
+      "professional": "Professional",
+      "funny": "Funny",
+      "casual": "Casual",
+      "luxury": "Luxury",
+      "cozy": "Cozy",
+      "modern": "Modern"
+    }
+  },
+  "background": {
+    "heading": "Change Background",
+    "options": {
+      "kopitiam": { "label": "Kopitiam", "desc": "Classic marble table" },
+      "cafe": { "label": "Modern Cafe", "desc": "Warm wooden table" },
+      "street": { "label": "Street Food", "desc": "Night market vibes" },
+      "premium": { "label": "Premium", "desc": "Clean & elegant" }
+    }
+  }
+}

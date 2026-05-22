@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import snapitLogo from '../assets/snapit-logo.png';
 
 export default function WelcomeScreen({ onLogin, onSignUp }) {
+    const { t } = useTranslation('welcome');
 
     return (
         <section className="h-full flex items-center justify-center px-6 bg-[#fff8f6] text-[#1a0f0d] font-sans">
@@ -28,10 +30,10 @@ export default function WelcomeScreen({ onLogin, onSignUp }) {
                     transition={{ duration: 0.5, delay: 0.1 }}
                 >
                     <p className="text-lg opacity-70 mb-2 font-medium">
-                        Snap  .  Generate  .  Sell
+                        {t('tagline')}
                     </p>
                     <p className="text-sm opacity-60 mb-10">
-                        Instant captions and posters for your food business
+                        {t('subtitle')}
                     </p>
                 </motion.div>
 
@@ -46,18 +48,18 @@ export default function WelcomeScreen({ onLogin, onSignUp }) {
                         onClick={onSignUp}
                         className="w-full px-6 py-3.5 rounded-2xl text-base font-semibold bg-[#dc2626] text-white hover:brightness-90 transition-all hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(220,38,38,0.3)]"
                     >
-                        Sign Up
+                        {t('signUp')}
                     </button>
                     <button
                         onClick={onLogin}
                         className="w-full px-6 py-3.5 rounded-2xl text-base font-semibold bg-white text-[#dc2626] border border-gray-200 hover:bg-gray-50 transition-all hover:-translate-y-[1px]"
                     >
-                        Login
+                        {t('login')}
                     </button>
                 </motion.div>
 
                 <p className="text-xs opacity-40">
-                    Secure authentication · Your data stays private
+                    {t('footer')}
                 </p>
             </div>
         </section>

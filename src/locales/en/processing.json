@@ -1,0 +1,14 @@
+{
+  "loadingTexts": [
+    "Chopping up the data...",
+    "Adding some Malaglish spice...",
+    "Plating your digital poster...",
+    "Applying final touches..."
+  ],
+  "errors": {
+    "noFile": "Critical Error: No image payload found.",
+    "network": "An unexpected network error occurred.",
+    "title": "Generation Failed",
+    "retry": "Go Back & Try Again"
+  }
+}

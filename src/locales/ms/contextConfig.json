@@ -1,0 +1,38 @@
+{
+  "header": {
+    "title": "Butiran",
+    "subtitle": "Kongsi sikit apa yang anda jual"
+  },
+  "dish": {
+    "heading": "Nama Hidangan?",
+    "nameLabel": "Nama Makanan",
+    "namePlaceholder": "cth., Nasi Lemak Ayam Goreng",
+    "priceLabel": "Harga"
+  },
+  "language": {
+    "heading": "Bahasa Kapsyen"
+  },
+  "pro": {
+    "heading": "Konteks Pro",
+    "descriptionLabel": "Penerangan",
+    "descriptionPlaceholder": "cth., Mee tarik dengan ikan bilis dari Penang setiap hari",
+    "toneLabel": "Nada",
+    "tones": {
+      "professional": "Profesional",
+      "funny": "Lucu",
+      "casual": "Santai",
+      "luxury": "Mewah",
+      "cozy": "Mesra",
+      "modern": "Moden"
+    }
+  },
+  "background": {
+    "heading": "Tukar Latar Belakang",
+    "options": {
+      "kopitiam": { "label": "Kopitiam", "desc": "Meja marmar klasik" },
+      "cafe": { "label": "Kafe Moden", "desc": "Meja kayu & terang" },
+      "street": { "label": "Pasar Malam", "desc": "Suasana pasar malam" },
+      "premium": { "label": "Premium", "desc": "Bersih & eksklusif" }
+    }
+  }
+}

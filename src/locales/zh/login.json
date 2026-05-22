@@ -1,0 +1,30 @@
+{
+  "subtitle": "几秒钟创建惊艳的餐饮营销内容",
+  "tabs": {
+    "login": "登录",
+    "register": "注册"
+  },
+  "fields": {
+    "username": "用户名",
+    "usernamePlaceholder": "你的显示名称",
+    "email": "电子邮箱",
+    "emailPlaceholder": "your@email.com",
+    "password": "密码",
+    "passwordHint": "密码至少需要 6 位字符"
+  },
+  "submit": {
+    "login": "登录",
+    "register": "创建账号",
+    "loggingIn": "登录中...",
+    "registering": "创建账号中..."
+  },
+  "toggle": {
+    "hasAccount": "已有账号? ",
+    "noAccount": "还没有账号? ",
+    "loginCta": "登录",
+    "registerCta": "注册"
+  },
+  "errors": {
+    "duplicate": "此邮箱可能已注册账号,试试直接登录。"
+  }
+}

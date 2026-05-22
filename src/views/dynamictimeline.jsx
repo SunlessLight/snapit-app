@@ -1,14 +1,10 @@
 import React from 'react';
-import { Check } from 'lucide-react'; // Assuming you use lucide-react
+import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-export default function DynamicTimeline({ currentStep, isEN }) {
-    const steps = [
-        { num: 1, label: isEN ? "Photo" : "Gambar" },
-        { num: 2, label: isEN ? "Edit" : "Sunting" },
-        { num: 3, label: isEN ? "Vibe" : "Suasana" },
-        { num: 4, label: isEN ? "AI Magic" : "Sihir AI" },
-        { num: 5, label: isEN ? "Result" : "Hasil" }
-    ];
+export default function DynamicTimeline({ currentStep }) {
+    const { t } = useTranslation('timeline');
+    const steps = [1, 2, 3, 4, 5].map(num => ({ num, label: t(`steps.${num}`) }));
 
     return (
         // Sticky wrapper that floats at the top

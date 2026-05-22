@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../components/SegmentedControl';
 
 const ASPECT_RATIOS = [
@@ -78,7 +79,8 @@ function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
     return centerCrop(makeAspectCrop({ unit: '%', width: 90 }, aspect, mediaWidth, mediaHeight), mediaWidth, mediaHeight);
 }
 
-export default function MediaEditorView({ appUILanguage, mediaState, setMediaState, onNext, onPrev }) {
+export default function MediaEditorView({ mediaState, setMediaState, onNext, onPrev }) {
+    const { t } = useTranslation(['mediaEditor', 'common']);
     // UI State Machine: 'DEFAULT' | 'ADJUST' | 'CROP'
     const [controlState, setControlState] = useState('DEFAULT');
 
@@ -89,7 +91,6 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
     const [completedCrop, setCompletedCrop] = useState(null);
     const imgRef = useRef(null);
 
-    const isEN = appUILanguage === "EN";
     const activeImg = mediaState;
     const isPro = !!activeImg.isMediaEditorPro;
 
@@ -169,7 +170,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
         } catch (err) {
             console.error("Failed to crop image:", err);
             // Assuming you'll hook this to your Toast system later
-            alert(isEN ? "Failed to apply crop." : "Gagal memotong gambar.");
+            alert(t('mediaEditor:crop.applyFailed'));
         } finally {
             setIsProcessingCrop(false);
             setCompletedCrop(null);
@@ -239,7 +240,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
                     {/* Hero Text */}
                     <div className="text-center pt-4 md:mb-6 flex-shrink-0">
-                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">{isEN ? "Let's make it pop." : "Jom kasi cun."}</h2>
+                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">{t('mediaEditor:hero')}</h2>
                     </div>
 
                     {/* Pro toggle (above-right of the main card) */}
@@ -306,7 +307,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                     <button
                                         onClick={handleReset}
                                         className={`absolute top-0 ${controlState === 'ADJUST' ? 'left-0' : 'right-0'} p-2 rounded-full bg-gray-50 text-gray-400 md:hover:bg-gray-100 md:hover:text-gray-700 active:scale-95 transition-all`}
-                                        title={isEN ? "Reset edits" : "Tetap semula"}
+                                        title={t('mediaEditor:actions.resetTitle')}
                                     >
                                         <RotateCcw size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={2.5} />
                                     </button>
@@ -337,7 +338,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                                 <Sparkles size={20} className="md:w-6 md:h-6" stroke={activeImg.isEnhanced ? "url(#gemini-gradient)" : "#6b7280"} />
                                             </button>
                                             <span className="text-[9px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                                {isEN ? "AI Enhance" : "Peningkatan AI"}
+                                                {t('mediaEditor:actions.aiEnhance')}
                                             </span>
                                         </div>
 
@@ -350,7 +351,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                                 <CropIcon size={20} className="md:w-6 md:h-6" />
                                             </button>
                                             <span className="text-[9px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                                {isEN ? "Crop" : "Potong"}
+                                                {t('mediaEditor:actions.crop')}
                                             </span>
                                         </div>
 
@@ -363,7 +364,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                                 <SlidersHorizontal size={20} className="md:w-6 md:h-6" />
                                             </button>
                                             <span className="text-[9px] md:text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                                {isEN ? "Adjust" : "Ubah"}
+                                                {t('mediaEditor:actions.adjust')}
                                             </span>
                                         </div>
                                     </div>
@@ -374,19 +375,19 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                     <div className="flex flex-col gap-4 mt-6 md:mt-8 pt-4 animate-[fadeIn_0.2s_ease]">
                                         <div className="flex items-center gap-2 md:gap-3">
                                             <Sun size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
-                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Brightness" : "Kecerahan"}</span>
+                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{t('mediaEditor:sliders.brightness')}</span>
                                             <input type="range" min="0" max="100" value={activeImg.brightness} onChange={(e) => handleSliderChange('brightness', e.target.value)}
                                                 className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
                                         </div>
                                         <div className="flex items-center gap-2 md:gap-3">
                                             <Contrast size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
-                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Contrast" : "Kontras"}</span>
+                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{t('mediaEditor:sliders.contrast')}</span>
                                             <input type="range" min="0" max="100" value={activeImg.contrast} onChange={(e) => handleSliderChange('contrast', e.target.value)}
                                                 className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
                                         </div>
                                         <div className="flex items-center gap-2 md:gap-3">
                                             <Droplets size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
-                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Saturation" : "Saturasi"}</span>
+                                            <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{t('mediaEditor:sliders.saturation')}</span>
                                             <input type="range" min="0" max="100" value={activeImg.saturation} onChange={(e) => handleSliderChange('saturation', e.target.value)}
                                                 className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
                                         </div>
@@ -394,30 +395,30 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                         {isPro && (
                                             <>
                                                 <div className="flex items-center gap-2 pt-2 mt-1 border-t border-gray-100">
-                                                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-[#dc2626]">{isEN ? "Pro" : "Pro"}</span>
+                                                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-[#dc2626]">{t('mediaEditor:proLabel')}</span>
                                                     <div className="flex-1 h-px bg-gradient-to-r from-red-100 to-transparent" />
                                                 </div>
                                                 <div className="flex items-center gap-2 md:gap-3">
                                                     <Palette size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
-                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Hue" : "Warna"}</span>
+                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{t('mediaEditor:sliders.hue')}</span>
                                                     <input type="range" min="0" max="100" value={activeImg.hue ?? 50} onChange={(e) => handleSliderChange('hue', e.target.value)}
                                                         className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
                                                 </div>
                                                 <div className="flex items-center gap-2 md:gap-3">
                                                     <Aperture size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
-                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Blur" : "Kabur"}</span>
+                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{t('mediaEditor:sliders.blur')}</span>
                                                     <input type="range" min="0" max="100" value={activeImg.blur ?? 0} onChange={(e) => handleSliderChange('blur', e.target.value)}
                                                         className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
                                                 </div>
                                                 <div className="flex items-center gap-2 md:gap-3">
                                                     <Focus size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
-                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Sharpness" : "Ketajaman"}</span>
+                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{t('mediaEditor:sliders.sharpness')}</span>
                                                     <input type="range" min="0" max="100" value={activeImg.sharpness ?? 0} onChange={(e) => handleSliderChange('sharpness', e.target.value)}
                                                         className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
                                                 </div>
                                                 <div className="flex items-center gap-2 md:gap-3">
                                                     <CircleDot size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
-                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Vignette" : "Vignette"}</span>
+                                                    <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{t('mediaEditor:sliders.vignette')}</span>
                                                     <input type="range" min="0" max="100" value={activeImg.vignette ?? 0} onChange={(e) => handleSliderChange('vignette', e.target.value)}
                                                         className="flex-1 h-1 bg-gray-200 rounded-full appearance-none accent-gray-800 outline-none" />
                                                 </div>
@@ -461,14 +462,14 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                                 onClick={() => setControlState('DEFAULT')}
                                                 className="flex-1 px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-colors bg-gray-100 text-gray-600 md:hover:bg-gray-200 active:scale-95"
                                             >
-                                                {isEN ? "Cancel" : "Batal"}
+                                                {t('common:cancel')}
                                             </button>
                                             <button
                                                 disabled={isProcessingCrop}
                                                 onClick={handleApplyCrop}
                                                 className="flex-1 px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm md:text-base font-semibold transition-colors bg-[#1a0f0d] text-white shadow-md md:hover:bg-black flex items-center justify-center gap-2 active:scale-95"
                                             >
-                                                {isProcessingCrop ? <span className="animate-pulse">...</span> : <><Check size={16} className="md:w-[18px] md:h-[18px]" /> {isEN ? "Apply" : "Teruskan"}</>}
+                                                {isProcessingCrop ? <span className="animate-pulse">...</span> : <><Check size={16} className="md:w-[18px] md:h-[18px]" /> {t('common:apply')}</>}
                                             </button>
                                         </div>
                                     </div>
@@ -484,7 +485,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                 disabled={controlState === 'CROP' || isProcessingCrop}
                                 className="bg-[#dc2626] text-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-semibold shadow-[0_8px_20px_rgba(220,38,38,0.25)] md:hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                             >
-                                {isEN ? "Next" : "Seterusnya"} <ArrowRight size={16} className="md:w-[18px] md:h-[18px]" />
+                                {t('common:next')} <ArrowRight size={16} className="md:w-[18px] md:h-[18px]" />
                             </button>
 
                             <button
@@ -492,7 +493,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
                                 disabled={controlState === 'CROP' || isProcessingCrop}
                                 className="border-[1.5px] md:border-2 border-[#e5d5d0] text-[#1a0f0d] bg-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-semibold md:hover:border-[#dc2626] md:hover:text-[#dc2626] active:bg-gray-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <ArrowLeft size={16} className="md:w-[18px] md:h-[18px]" /> {isEN ? "Back" : "Kembali"}
+                                <ArrowLeft size={16} className="md:w-[18px] md:h-[18px]" /> {t('common:back')}
                             </button>
                         </div>
 

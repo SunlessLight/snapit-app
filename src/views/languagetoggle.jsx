@@ -1,31 +1,35 @@
 import React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+
+const CYCLE = ['EN', 'ZH', 'MS'];
+const LABELS = { EN: 'EN', ZH: '中', MS: 'BM' };
 
 export default function LanguageToggle({ appUILanguage, setAppUILanguage }) {
-    const isEN = appUILanguage === "EN";
+    const current = CYCLE.includes(appUILanguage) ? appUILanguage : 'EN';
 
-    const toggleLanguage = () => {
-        setAppUILanguage(isEN ? "MS" : "EN");
+    const cycleLanguage = () => {
+        const i = CYCLE.indexOf(current);
+        setAppUILanguage(CYCLE[(i + 1) % CYCLE.length]);
     };
 
     return (
         <button
-            onClick={toggleLanguage}
-            className="relative flex items-center bg-gray-100/80 p-1 rounded-full w-20 h-8 cursor-pointer border border-gray-200/50 shadow-inner"
-            aria-label="Toggle Language"
+            onClick={cycleLanguage}
+            className="relative flex items-center justify-center bg-white p-1 rounded-full w-12 h-8 cursor-pointer border border-gray-200 shadow-inner overflow-hidden active:scale-95 transition-transform"
+            aria-label="Cycle language"
         >
-            {/* Sliding White Pill Background */}
-            <div
-                className={`absolute left-1 top-1 bottom-1 w-[34px] bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition-transform duration-300 cubic-bezier(0.4, 0, 0.2, 1) ${isEN ? 'translate-x-0' : 'translate-x-[38px]'
-                    }`}
-            />
-
-            {/* Labels */}
-            <div className={`relative z-10 flex-1 text-center text-[11px] font-bold tracking-wide transition-colors duration-300 ${isEN ? 'text-[#dc2626]' : 'text-gray-400'}`}>
-                EN
-            </div>
-            <div className={`relative z-10 flex-1 text-center text-[11px] font-bold tracking-wide transition-colors duration-300 ${!isEN ? 'text-[#dc2626]' : 'text-gray-400'}`}>
-                BM
-            </div>
+            <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                    key={current}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18 }}
+                    className="text-[12px] font-bold tracking-wide text-[#dc2626]"
+                >
+                    {LABELS[current]}
+                </motion.span>
+            </AnimatePresence>
         </button>
     );
 }

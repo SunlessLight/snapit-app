@@ -13,6 +13,18 @@ import snapitLogo from './assets/snapit-logo.png';
 import Header from './views/header';
 import DynamicTimeline from './views/dynamictimeline';
 import { authService } from './services/authService';
+import i18n from './i18n';
+
+const UI_LANGUAGE_STORAGE_KEY = 'snapit:uiLanguage';
+const SUPPORTED_UI_LANGUAGES = ['EN', 'ZH', 'MS'];
+
+const loadInitialUILanguage = () => {
+  try {
+    const stored = localStorage.getItem(UI_LANGUAGE_STORAGE_KEY);
+    if (stored && SUPPORTED_UI_LANGUAGES.includes(stored)) return stored;
+  } catch { /* storage disabled */ }
+  return 'EN';
+};
 
 const DEFAULT_MEDIA_STATE = {
   file: null,
@@ -84,7 +96,7 @@ export default function App() {
   // ========== APP STATE ==========
   const [currentStep, setCurrentStep] = useState(0);
   const [userName, setUserName] = useState(' ');
-  const [appUILanguage, setAppUILanguage] = useState("EN");
+  const [appUILanguage, setAppUILanguage] = useState(loadInitialUILanguage);
 
   const [mediaState, setMediaState] = useState(() => {
     const stored = loadFromStorage(MEDIA_STATE_STORAGE_KEY, DEFAULT_MEDIA_STATE);
@@ -209,6 +221,12 @@ export default function App() {
     } catch { /* storage full or disabled */ }
   }, [marketingConfig]);
 
+  // Sync appUILanguage to localStorage + i18next on every change
+  useEffect(() => {
+    try { localStorage.setItem(UI_LANGUAGE_STORAGE_KEY, appUILanguage); } catch { /* ignore */ }
+    i18n.changeLanguage(appUILanguage.toLowerCase());
+  }, [appUILanguage]);
+
   // ========== URL CLEANUP ==========
   const activeUrls = useRef({ url: null, processedUrl: null });
 
@@ -275,18 +293,18 @@ export default function App() {
         return <WelcomeScreen onLogin={handleShowLogin} onSignUp={handleShowSignUp} />;
       case 1:
         // We can pass nextStep directly since we removed the array index wrapper
-        return <DashboardView userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
+        return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
       case 2:
-        return <MediaEditorView userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
+        return <MediaEditorView userName={userName} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
       case 3:
-        return <ContextConfigurationView userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} setMediaState={setMediaState} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
+        return <ContextConfigurationView userName={userName} mediaState={mediaState} setMediaState={setMediaState} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
       case 4:
         // Added the missing props so the component can read the form data
-        return <ProcessingScreen userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={nextStep} onPrev={prevStep} />;
+        return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={nextStep} onPrev={prevStep} />;
       case 5:
-        return <ResultsHubView userName={userName} appUILanguage={appUILanguage} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
+        return <ResultsHubView userName={userName} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
       default:
-        return <DashboardView userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
+        return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
     }
   };
 
@@ -315,7 +333,7 @@ export default function App() {
         {showHeader && (
           <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
             <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
-            <DynamicTimeline currentStep={currentStep} isEN={appUILanguage === "EN"} />
+            <DynamicTimeline currentStep={currentStep} />
           </div>
         )}
       </div>

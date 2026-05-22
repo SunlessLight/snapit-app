@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Sparkles, ArrowLeft, Utensils, CheckCircle2, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import imageCompression from 'browser-image-compression'
+import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../components/SegmentedControl';
 
 // Apply a 3x3 convolution to ImageData in-place (used for sharpness when baking,
@@ -99,8 +100,8 @@ const createProcessedBlob = (src, mediaState) => {
     });
 };
 
-export default function ContextConfigurationView({ appUILanguage, config, setConfig, onNext, onPrev, mediaState, setMediaState }) {
-    const isEN = appUILanguage === "EN";
+export default function ContextConfigurationView({ config, setConfig, onNext, onPrev, mediaState, setMediaState }) {
+    const { t } = useTranslation(['contextConfig', 'common']);
 
     useEffect(() => {
         let isMounted = true;
@@ -152,36 +153,36 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
         mediaState.isMediaEditorPro, mediaState.hue, mediaState.blur, mediaState.sharpness, mediaState.vignette
     ]);
 
-    // Options matching our new frictionless architecture
-    const languageOptions = ["English", "Bahasa Melayu", "Local Style"];
+    // Caption output language options — values are sent to backend Gemini prompt verbatim
+    const languageOptions = ["English", "Bahasa Melayu", "中文", "Local Style"];
 
     const backgroundOptions = [
         {
             id: 'kopitiam',
-            label: isEN ? 'Kopitiam' : 'Kopitiam',
-            desc: isEN ? 'Classic marble table' : 'Meja marmar klasik',
+            label: t('contextConfig:background.options.kopitiam.label'),
+            desc: t('contextConfig:background.options.kopitiam.desc'),
             gradient: 'from-slate-100 to-gray-200',
             textColor: 'text-slate-700'
         },
         {
             id: 'cafe',
-            label: isEN ? 'Modern Cafe' : 'Kafe Moden',
-            desc: isEN ? 'Warm wooden table' : 'Meja kayu & terang',
+            label: t('contextConfig:background.options.cafe.label'),
+            desc: t('contextConfig:background.options.cafe.desc'),
             gradient: 'from-amber-50 to-orange-100',
             textColor: 'text-amber-800'
         },
         {
             id: 'street',
-            label: isEN ? 'Street Food' : 'Pasar Malam',
-            desc: isEN ? 'Night market vibes' : 'Suasana pasar malam',
+            label: t('contextConfig:background.options.street.label'),
+            desc: t('contextConfig:background.options.street.desc'),
             gradient: 'from-gray-800 to-slate-900',
             textColor: 'text-white'
         },
         {
             id: 'premium',
-            label: isEN ? 'Premium' : 'Premium',
-            desc: isEN ? 'Clean & elegant' : 'Bersih & eksklusif',
-            gradient: 'from-zinc-900 to-black', // You can keep the dark gradient for the UI button, it looks premium.
+            label: t('contextConfig:background.options.premium.label'),
+            desc: t('contextConfig:background.options.premium.desc'),
+            gradient: 'from-zinc-900 to-black',
             textColor: 'text-zinc-200'
         }
     ];
@@ -190,12 +191,12 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
     const isPro = !!config.isContextPro;
 
     const toneOptions = [
-        { id: 'professional', label: isEN ? 'Professional' : 'Profesional' },
-        { id: 'funny', label: isEN ? 'Funny' : 'Lucu' },
-        { id: 'casual', label: isEN ? 'Casual' : 'Santai' },
-        { id: 'luxury', label: isEN ? 'Luxury' : 'Mewah' },
-        { id: 'cozy', label: isEN ? 'Cozy' : 'Mesra' },
-        { id: 'modern', label: isEN ? 'Modern' : 'Moden' },
+        { id: 'professional', label: t('contextConfig:pro.tones.professional') },
+        { id: 'funny', label: t('contextConfig:pro.tones.funny') },
+        { id: 'casual', label: t('contextConfig:pro.tones.casual') },
+        { id: 'luxury', label: t('contextConfig:pro.tones.luxury') },
+        { id: 'cozy', label: t('contextConfig:pro.tones.cozy') },
+        { id: 'modern', label: t('contextConfig:pro.tones.modern') },
     ];
 
     // Strict Validation: Check if ALL fields have values
@@ -219,10 +220,10 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                 </button>
                 <div className="flex-1 text-center pr-10">
                     <h1 className="text-xl md:text-2xl font-serif font-extrabold text-gray-900">
-                        {isEN ? "The Details" : "Butiran"}
+                        {t('contextConfig:header.title')}
                     </h1>
                     <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-                        {isEN ? "Tell us what you're selling" : "Kongsi sikit apa yang anda jual"}
+                        {t('contextConfig:header.subtitle')}
                     </p>
                 </div>
             </header>
@@ -245,16 +246,16 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
                         <div className="flex items-center gap-2 mb-4">
                             <Utensils className="w-5 h-5 text-[#dc2626]" />
-                            <h2 className="font-serif font-bold text-lg">{isEN ? "What's the dish?" : "Nama Hidangan?"}</h2>
+                            <h2 className="font-serif font-bold text-lg">{t('contextConfig:dish.heading')}</h2>
                         </div>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
-                                    {isEN ? "Dish Name" : "Nama Makanan"}
+                                    {t('contextConfig:dish.nameLabel')}
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder={isEN ? "e.g., Nasi Lemak Ayam Goreng" : "cth., Nasi Lemak Ayam Goreng"}
+                                    placeholder={t('contextConfig:dish.namePlaceholder')}
                                     value={config.dishName || ""}
                                     onChange={(e) => handleUpdate('dishName', e.target.value)}
                                     className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium"
@@ -262,7 +263,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
-                                    {isEN ? "Price" : "Harga"}
+                                    {t('contextConfig:dish.priceLabel')}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -284,7 +285,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
                         <div className="flex items-center gap-2 mb-4">
                             <MessageSquare className="w-5 h-5 text-[#dc2626]" />
-                            <h2 className="font-serif font-bold text-lg">{isEN ? "Caption Language" : "Bahasa Kapsyen"}</h2>
+                            <h2 className="font-serif font-bold text-lg">{t('contextConfig:language.heading')}</h2>
                         </div>
                         <SegmentedControl
                             options={languageOptions}
@@ -299,19 +300,17 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
                             <div className="flex items-center gap-2 mb-4">
                                 <Sparkles className="w-5 h-5 text-[#dc2626]" />
-                                <h2 className="font-serif font-bold text-lg">{isEN ? "Pro Context" : "Konteks Pro"}</h2>
+                                <h2 className="font-serif font-bold text-lg">{t('contextConfig:pro.heading')}</h2>
                                 <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-[#dc2626] bg-red-50 px-2 py-0.5 rounded-full">PRO</span>
                             </div>
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
-                                        {isEN ? "Description" : "Penerangan"}
+                                        {t('contextConfig:pro.descriptionLabel')}
                                     </label>
                                     <textarea
                                         rows={3}
-                                        placeholder={isEN
-                                            ? "e.g., Handmade pan-mee with anchovies sourced daily from Penang"
-                                            : "cth., Mee tarik dengan ikan bilis dari Penang setiap hari"}
+                                        placeholder={t('contextConfig:pro.descriptionPlaceholder')}
                                         value={config.description || ""}
                                         onChange={(e) => handleUpdate('description', e.target.value)}
                                         className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium resize-none"
@@ -319,7 +318,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
-                                        {isEN ? "Tone" : "Nada"}
+                                        {t('contextConfig:pro.toneLabel')}
                                     </label>
                                     <div className="grid grid-cols-3 gap-2">
                                         {toneOptions.map((opt) => {
@@ -349,7 +348,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                                 <ImageIcon className="w-5 h-5 text-[#dc2626]" />
-                                <h2 className="font-serif font-bold text-lg">{isEN ? "Change Background" : "Tukar Latar Belakang"}</h2>
+                                <h2 className="font-serif font-bold text-lg">{t('contextConfig:background.heading')}</h2>
                             </div>
 
                             {/* New Segmented Toggle (Matches Language Toggle Style) */}
@@ -362,7 +361,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                                         : 'text-gray-400 hover:text-gray-600 bg-transparent'
                                         }`}
                                 >
-                                    {isEN ? "ON" : "BUKA"}
+                                    {t('common:on')}
                                 </button>
                                 <button
                                     type="button"
@@ -372,7 +371,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                                         : 'text-gray-400 hover:text-gray-600 bg-transparent'
                                         }`}
                                 >
-                                    {isEN ? "OFF" : "TUTUP"}
+                                    {t('common:off')}
                                 </button>
                             </div>
 
@@ -431,7 +430,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                 `}
                 >
                     <Sparkles className={`w-5 h-5 ${isReady ? "animate-pulse" : ""}`} />
-                    {isEN ? "Generate" : "Jana"}
+                    {t('common:generate')}
                 </button>
             </div>
 

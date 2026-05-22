@@ -1,14 +1,21 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import heic2any from 'heic2any';
-import { PRO_TIPS } from '../constants';
-import { Camera, ArrowRight, X, Loader2, UploadCloud } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Camera, ArrowRight, X, Loader2, UploadCloud, Sun, Focus, Lightbulb, Utensils } from 'lucide-react';
 
-export default function DashboardView({ appUILanguage, onImageSelect, onImageRemove, mediaState, onNext }) {
+const PRO_TIPS = [
+    { id: 1, icon: Sun },
+    { id: 2, icon: Focus },
+    { id: 3, icon: Lightbulb },
+    { id: 4, icon: Utensils },
+];
+
+export default function DashboardView({ onImageSelect, onImageRemove, mediaState, onNext }) {
+    const { t } = useTranslation(['dashboard', 'common']);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
-    const isEN = appUILanguage === "EN";
     const hasImage = mediaState.file !== null;
 
     // --- Pro Tips Carousel Logic ---
@@ -101,8 +108,8 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
 
                     {/* Hero Text - Margins tightened */}
                     <div className="text-center pt-4 mb-3 md:mb-6 flex-shrink-0">
-                        <h2 className="font-serif text-xl md:text-3xl font-extrabold mb-1 md:mb-3">{isEN ? "Drop a Photo" : "Muat Naik Gambar"}</h2>
-                        <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">{isEN ? "We'll polish it and turn it into something worth sharing." : "Biar kami cantikkan gambar ni, sedia untuk dikongsi."}</p>
+                        <h2 className="font-serif text-xl md:text-3xl font-extrabold mb-1 md:mb-3">{t('dashboard:hero.title')}</h2>
+                        <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">{t('dashboard:hero.subtitle')}</p>
                     </div>
 
                     {/* THE SHOCK ABSORBER: Drop Zone Box */}
@@ -124,7 +131,7 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
                             {isProcessing ? (
                                 <div className="flex flex-col items-center gap-2 md:gap-3 text-[#dc2626]">
                                     <Loader2 className="w-6 h-6 md:w-10 md:h-10 animate-spin" />
-                                    <span className="font-semibold text-xs md:text-sm animate-pulse tracking-wide uppercase">Processing...</span>
+                                    <span className="font-semibold text-xs md:text-sm animate-pulse tracking-wide uppercase">{t('dashboard:dropZone.processing')}</span>
                                 </div>
                             ) : hasImage ? (
                                 // FIX 4: max-h-full ensures a tall uploaded image doesn't blow out the flexible container
@@ -142,12 +149,12 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
                                     <div className="w-10 h-10 md:w-16 md:h-16 mx-auto rounded-xl md:rounded-2xl flex items-center justify-center mb-2 md:mb-5 bg-red-50 text-[#dc2626] md:group-hover:scale-110 transition-transform">
                                         <UploadCloud size={24} className="md:w-8 md:h-8" />
                                     </div>
-                                    <p className="font-serif text-xl font-semibold mb-1 hidden sm:block">{isEN ? "Drag & drop your photo" : "Tarik & letak gambar anda"}</p>
-                                    <p className="font-serif text-base font-semibold mb-2 sm:hidden">{isEN ? "Press to upload photo" : "Tekan untuk muat naik gambar"}</p>
+                                    <p className="font-serif text-xl font-semibold mb-1 hidden sm:block">{t('dashboard:dropZone.dragDesktop')}</p>
+                                    <p className="font-serif text-base font-semibold mb-2 sm:hidden">{t('dashboard:dropZone.pressMobile')}</p>
 
-                                    <p className="text-xs md:text-sm opacity-60 mb-4 hidden sm:block">{isEN ? "or click to browse — JPG, PNG, WEBP" : "atau klik untuk pilih gambar — JPG, PNG, WEBP"}</p>
+                                    <p className="text-xs md:text-sm opacity-60 mb-4 hidden sm:block">{t('dashboard:dropZone.browseHint')}</p>
                                     <span className="bg-[#dc2626] text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[10px] md:text-sm font-semibold inline-flex items-center gap-2 shadow-sm">
-                                        {isEN ? "Choose Photo" : "Pilih Gambar"}
+                                        {t('dashboard:dropZone.choosePhoto')}
                                     </span>
                                 </>
                             )}
@@ -155,7 +162,7 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
 
                         {/* Privacy text moved here, tightly spaced */}
                         <p className="text-center text-[9px] md:text-xs opacity-50 mt-1.5 md:mt-3 flex-shrink-0 hidden md:block">
-                            {isEN ? "Your photo stays in your browser. Nothing is uploaded anywhere." : "Gambar diproses terus dalam browser anda. Tiada apa yang dimuat naik ke Internet."}
+                            {t('dashboard:dropZone.privacyHint')}
                         </p>
                     </div>
 
@@ -163,7 +170,7 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
                     <div className="w-full max-w-2xl mx-auto mt-3 md:mt-6 relative flex-shrink-0">
 
                         <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory gap-2 md:gap-3 pb-1 md:pb-2 pt-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth">
-                            {PRO_TIPS?.map((tip) => {
+                            {PRO_TIPS.map((tip) => {
                                 const Icon = tip.icon;
                                 return (
                                     <div
@@ -174,7 +181,7 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
                                             <Icon className="w-3 h-3 md:w-5 md:h-5" strokeWidth={2.5} />
                                         </div>
                                         <p className="text-[10px] md:text-sm font-medium leading-tight text-gray-700 line-clamp-2">
-                                            {appUILanguage === "EN" ? tip.textEN : tip.textMS}
+                                            {t(`dashboard:proTips.${tip.id}`)}
                                         </p>
                                     </div>
                                 );
@@ -189,7 +196,7 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
                                 onClick={onNext}
                                 className="bg-[#dc2626] w-full max-w-xs justify-center text-white px-6 md:px-8 py-3 md:py-3.5 rounded-full font-semibold flex items-center gap-2 hover:brightness-90 transition-all md:hover:-translate-y-1 shadow-[0_8px_20px_rgba(220,38,38,0.25)] text-sm md:text-lg"
                             >
-                                Edit <ArrowRight size={18} />
+                                {t('dashboard:actions.edit')} <ArrowRight size={18} />
                             </button>
                         ) : (
                             <>
@@ -203,7 +210,7 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
                                     >
                                         <Camera size={26} strokeWidth={2} className="md:w-8 md:h-8" />
                                     </button>
-                                    <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">Take Photo</span>
+                                    <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">{t('dashboard:actions.takePhoto')}</span>
                                 </div>
                             </>
                         )}

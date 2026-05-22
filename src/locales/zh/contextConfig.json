@@ -1,0 +1,38 @@
+{
+  "header": {
+    "title": "填写详情",
+    "subtitle": "告诉我们你卖什么"
+  },
+  "dish": {
+    "heading": "什么菜?",
+    "nameLabel": "菜品名称",
+    "namePlaceholder": "例如:椰浆饭炸鸡",
+    "priceLabel": "价格"
+  },
+  "language": {
+    "heading": "文案语言"
+  },
+  "pro": {
+    "heading": "Pro 上下文",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "例如:手工板面,槟城每日直送江鱼仔",
+    "toneLabel": "风格",
+    "tones": {
+      "professional": "专业",
+      "funny": "幽默",
+      "casual": "随意",
+      "luxury": "高端",
+      "cozy": "温馨",
+      "modern": "现代"
+    }
+  },
+  "background": {
+    "heading": "更换背景",
+    "options": {
+      "kopitiam": { "label": "茶餐室", "desc": "经典大理石桌" },
+      "cafe": { "label": "现代咖啡馆", "desc": "温暖木质桌面" },
+      "street": { "label": "街头小食", "desc": "夜市氛围" },
+      "premium": { "label": "高端", "desc": "干净优雅" }
+    }
+  }
+}

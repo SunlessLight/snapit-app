@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authService } from '../services/authService';
 import snapitLogo from '../assets/snapit-logo.png';
 
 const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
+  const { t } = useTranslation('login');
   const [isRegister, setIsRegister] = useState(authMode === 'register');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -28,7 +30,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
       if (isRegister) {
         result = await authService.register(email, password, username);
         if (!result.user) {
-          throw new Error('An account with this email may already exist. Try logging in instead.');
+          throw new Error(t('errors.duplicate'));
         }
       } else {
         result = await authService.login(email, password);
@@ -74,7 +76,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="text-sm md:text-base text-gray-600 mb-4 text-center max-w-xs"
       >
-        Create stunning food marketing content in seconds
+        {t('subtitle')}
       </motion.p>
 
       {/* Auth Card */}
@@ -94,7 +96,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
               : 'text-gray-600 bg-transparent'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Login
+            {t('tabs.login')}
           </button>
           <button
             onClick={() => !loading && setIsRegister(true)}
@@ -104,7 +106,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
               : 'text-gray-600 bg-transparent'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Register
+            {t('tabs.register')}
           </button>
         </div>
 
@@ -126,13 +128,13 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
           {isRegister && (
             <div>
               <label className="block text-xs md:text-sm font-semibold text-[#1a0f0d] mb-2 uppercase tracking-wider">
-                Username
+                {t('fields.username')}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Your display name"
+                placeholder={t('fields.usernamePlaceholder')}
                 disabled={loading}
                 className="w-full py-3.5 px-4 rounded-2xl bg-gray-50 border border-gray-200 text-[#1a0f0d] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#dc2626] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
@@ -142,13 +144,13 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
           {/* Email Input */}
           <div>
             <label className="block text-xs md:text-sm font-semibold text-[#1a0f0d] mb-2 uppercase tracking-wider">
-              Email
+              {t('fields.email')}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              placeholder={t('fields.emailPlaceholder')}
               disabled={loading}
               className="w-full py-3.5 px-4 rounded-2xl bg-gray-50 border border-gray-200 text-[#1a0f0d] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#dc2626] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
@@ -157,7 +159,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
           {/* Password Input */}
           <div>
             <label className="block text-xs md:text-sm font-semibold text-[#1a0f0d] mb-2 uppercase tracking-wider">
-              Password
+              {t('fields.password')}
             </label>
             <div className="relative">
               <input
@@ -183,7 +185,7 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
             </div>
             {isRegister && (
               <p className="text-xs text-gray-500 mt-2">
-                Password must be at least 6 characters
+                {t('fields.passwordHint')}
               </p>
             )}
           </div>
@@ -218,23 +220,23 @@ const LoginScreen = ({ onSuccess, authMode = 'login' }) => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                {isRegister ? 'Creating Account...' : 'Logging In...'}
+                {isRegister ? t('submit.registering') : t('submit.loggingIn')}
               </span>
             ) : (
-              <>{isRegister ? 'Create Account' : 'Login'}</>
+              <>{isRegister ? t('submit.register') : t('submit.login')}</>
             )}
           </motion.button>
         </form>
 
         {/* Toggle Link */}
         <p className="text-center text-sm text-gray-600 mt-6">
-          {isRegister ? 'Already have an account? ' : "Don't have an account? "}
+          {isRegister ? t('toggle.hasAccount') : t('toggle.noAccount')}
           <button
             onClick={toggleMode}
             disabled={loading}
             className="text-[#dc2626] font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isRegister ? 'Login' : 'Register'}
+            {isRegister ? t('toggle.loginCta') : t('toggle.registerCta')}
           </button>
         </p>
       </motion.div>

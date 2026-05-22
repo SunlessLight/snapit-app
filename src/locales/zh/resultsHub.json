@@ -1,0 +1,22 @@
+{
+  "heading": "你的营销素材",
+  "subheading": "复制、下载、分享,一键搞定。",
+  "labels": {
+    "aiEnhanced": "AI 增强版",
+    "original": "原图",
+    "title": "吸睛标题",
+    "description": "描述",
+    "caption": "社交文案 + 标签"
+  },
+  "download": {
+    "enhanced": "下载增强版图片",
+    "originalEdit": "下载原图",
+    "image": "下载图片"
+  },
+  "share": "分享到社交媒体",
+  "startOver": "开始新菜品",
+  "toast": {
+    "copied": "文案已复制到剪贴板!",
+    "copiedFallback": "文案已复制!可以粘贴了。"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "hero": "让它更出彩。",
+  "actions": {
+    "aiEnhance": "AI 增强",
+    "crop": "裁剪",
+    "adjust": "调整",
+    "resetTitle": "重置编辑"
+  },
+  "sliders": {
+    "brightness": "亮度",
+    "contrast": "对比度",
+    "saturation": "饱和度",
+    "hue": "色调",
+    "blur": "模糊",
+    "sharpness": "锐度",
+    "vignette": "暗角"
+  },
+  "proLabel": "Pro",
+  "crop": {
+    "applyFailed": "裁剪失败。"
+  }
+}

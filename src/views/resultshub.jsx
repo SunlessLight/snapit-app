@@ -8,9 +8,10 @@ import {
     ChevronsLeftRight,
     Sparkles
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-// --- Sub-Component: Smart Content Card (No changes here) ---
-const ContentCard = ({ label, value, field, onUpdate, isEN }) => {
+// --- Sub-Component: Smart Content Card ---
+const ContentCard = ({ label, value, field, onUpdate }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const textareaRef = useRef(null);
@@ -80,8 +81,8 @@ const ContentCard = ({ label, value, field, onUpdate, isEN }) => {
 };
 
 // --- Main View Component ---
-export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, setAiOutput, onStartOver }) {
-    const isEN = appUILanguage === "EN";
+export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onStartOver }) {
+    const { t } = useTranslation('resultsHub');
     const [sliderValue, setSliderValue] = useState(100);
     const [toastMessage, setToastMessage] = useState(null);
 
@@ -145,12 +146,12 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                 });
             } else {
                 navigator.clipboard.writeText(combinedText);
-                showToast(isEN ? "Text copied to clipboard!" : "Teks disalin ke papan keratan!");
+                showToast(t('toast.copied'));
             }
         } catch (error) {
             console.error("Error sharing:", error);
             navigator.clipboard.writeText(combinedText);
-            showToast(isEN ? "Copied text! Ready to paste." : "Teks disalin! Sedia untuk ditampal.");
+            showToast(t('toast.copiedFallback'));
         }
     };
 
@@ -167,10 +168,10 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
                 <div className="text-center mb-4 md:mb-8 flex-shrink-0">
                     <h1 className="font-serif text-2xl md:text-4xl font-extrabold mb-1 md:mb-3 tracking-tight">
-                        {isEN ? "Your Marketing Assets" : "Aset Pemasaran Anda"}
+                        {t('heading')}
                     </h1>
                     <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">
-                        {isEN ? "Ready to copy, download, and share." : "Dah siap! Sedia untuk di-copy, muat turun, dan kongsi."}
+                        {t('subheading')}
                     </p>
                 </div>
 
@@ -221,10 +222,10 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                                     </div>
 
                                     <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                        {isEN ? "AI Enhanced" : "Hasil Sentuhan AI"}
+                                        {t('labels.aiEnhanced')}
                                     </div>
                                     <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                        {isEN ? "Original" : "Asal"}
+                                        {t('labels.original')}
                                     </div>
                                 </>
                             )}
@@ -240,38 +241,31 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                                 }`}
                         >
                             <Download size={18} />
-                            {hasAiImage ?
-                                (sliderValue >= 50
-                                    ? (isEN ? "Download Enhanced Image" : "Muat Turun Gambar AI")
-                                    : (isEN ? "Download Original Edit" : "Muat Turun Gambar Asal")
-                                )
-                                : (isEN ? "Download Image" : "Muat Turun Gambar")
-                            }
+                            {hasAiImage
+                                ? (sliderValue >= 50 ? t('download.enhanced') : t('download.originalEdit'))
+                                : t('download.image')}
                         </button>
                     </section>
 
                     {/* RIGHT COLUMN: Editable Content Cards */}
                     <section className="w-full lg:w-1/2 space-y-3 md:space-y-4">
                         <ContentCard
-                            label={isEN ? "Catchy Title" : "Tajuk Menarik"}
+                            label={t('labels.title')}
                             value={aiOutput.title}
                             field="title"
                             onUpdate={handleUpdateText}
-                            isEN={isEN}
                         />
                         <ContentCard
-                            label={isEN ? "Description" : "Penerangan"}
+                            label={t('labels.description')}
                             value={aiOutput.description}
                             field="description"
                             onUpdate={handleUpdateText}
-                            isEN={isEN}
                         />
                         <ContentCard
-                            label={isEN ? "Social Caption + Tags" : "Kapsyen Sosial + Tags"}
+                            label={t('labels.caption')}
                             value={aiOutput.caption}
                             field="caption"
                             onUpdate={handleUpdateText}
-                            isEN={isEN}
                         />
                     </section>
                 </div>
@@ -282,16 +276,15 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                         className="w-full sm:flex-1 bg-[#dc2626] hover:bg-black text-white text-sm md:text-lg font-semibold py-3 md:py-3.5 rounded-full shadow-lg flex items-center justify-center gap-2 md:gap-3 transition-transform active:scale-[0.98]"
                     >
                         <Share2 size={20} />
-                        {isEN ? "Share to Social Media" : "Kongsi ke Media Sosial"}
+                        {t('share')}
                     </button>
 
                     <button
                         onClick={onStartOver}
-                        // Added border, rounded corners, and hover states here
                         className="w-full sm:w-auto bg-white border-2 border-gray-200 text-[#1a0f0d] hover:border-gray-300 hover:bg-gray-50 text-sm md:text-base font-semibold py-3 md:py-3.5 px-6 rounded-full flex items-center justify-center gap-2 transition-all"
                     >
                         <Sparkles size={16} />
-                        {isEN ? "Start New Dish" : "Muat Hidangan Baru"}
+                        {t('startOver')}
                     </button>
                 </div>
             </div>

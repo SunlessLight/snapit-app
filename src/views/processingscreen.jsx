@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const LOADING_TEXTS = {
-    EN: ["Chopping up the data...", "Adding some Malaglish spice...", "Plating your digital poster...", "Applying final touches..."],
-    MY: ["Memotong bahan-bahan data...", "Menambah 'rempah' AI dan gaya lokal...", "Menyiapkan poster digital anda...", "Sentuhan terakhir..."]
-};
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function ProcessingScreen({
-    appUILanguage,
     mediaState,
     marketingConfig,
     setAiOutput,
     onComplete,
     onPrev
 }) {
+    const { t } = useTranslation('processing');
     const [currentIndex, setCurrentIndex] = useState(0);
     const [error, setError] = useState(null);
 
-    const isEN = appUILanguage === "EN";
-    const currentTexts = isEN ? LOADING_TEXTS.EN : LOADING_TEXTS.MY;
+    const currentTexts = t('loadingTexts', { returnObjects: true });
 
     const selectedFile = mediaState.processedFile || mediaState.file || null;
     const dishName = marketingConfig?.dishName || "";
@@ -63,7 +58,7 @@ export default function ProcessingScreen({
         const generateProAssets = async () => {
             try {
                 if (!selectedFile) {
-                    throw new Error(isEN ? "Critical Error: No image payload found." : "Ralat Kritikal: Tiada fail gambar dijumpai.");
+                    throw new Error(t('errors.noFile'));
                 }
 
                 // Prepare Data
@@ -123,7 +118,7 @@ export default function ProcessingScreen({
             } catch (err) {
                 if (!isMounted) return;
                 console.error("API Error:", err);
-                setError(err.message || (isEN ? "An unexpected network error occurred." : "Ralat rangkaian yang tidak dijangka berlaku."));
+                setError(err.message || t('errors.network'));
             }
         };
 
@@ -133,7 +128,7 @@ export default function ProcessingScreen({
             isMounted = false;
             if (pollTimer) clearInterval(pollTimer);
         };
-    }, [selectedFile, dishName, price, outputLanguage, backgroundVibe, isEN, setAiOutput, onComplete]);
+    }, [selectedFile, dishName, price, outputLanguage, backgroundVibe, setAiOutput, onComplete, t]);
 
 
     // 3. Error State UI
@@ -146,13 +141,13 @@ export default function ProcessingScreen({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-serif font-bold text-gray-900 mb-2">{isEN ? "Generation Failed" : "Penjanaan Gagal"}</h2>
+                    <h2 className="text-xl font-serif font-bold text-gray-900 mb-2">{t('errors.title')}</h2>
                     <p className="text-sm text-gray-500 mb-8">{error}</p>
                     <button
                         onClick={onPrev}
                         className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3.5 px-6 rounded-2xl transition-colors text-sm"
                     >
-                        {isEN ? "Go Back & Try Again" : "Kembali & Cuba Lagi"}
+                        {t('errors.retry')}
                     </button>
                 </div>
             </div>

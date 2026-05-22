@@ -1,0 +1,22 @@
+{
+  "hero": "Jom kasi cun.",
+  "actions": {
+    "aiEnhance": "Peningkatan AI",
+    "crop": "Potong",
+    "adjust": "Ubah",
+    "resetTitle": "Tetap semula"
+  },
+  "sliders": {
+    "brightness": "Kecerahan",
+    "contrast": "Kontras",
+    "saturation": "Saturasi",
+    "hue": "Warna",
+    "blur": "Kabur",
+    "sharpness": "Ketajaman",
+    "vignette": "Vignette"
+  },
+  "proLabel": "Pro",
+  "crop": {
+    "applyFailed": "Gagal memotong gambar."
+  }
+}
