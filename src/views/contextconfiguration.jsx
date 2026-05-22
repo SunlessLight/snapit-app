@@ -210,14 +210,14 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
     return (
         <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
             {/* Header Area (Now flows naturally) */}
-            <header className="pb-safe px-6 flex items-center gap-3">
+            <header className="pb-safe pt-4 px-6 flex items-center">
                 <button
                     onClick={onPrev}
-                    className="p-2.5 bg-white rounded-full shadow-sm border border-gray-100 text-gray-800 hover:text-[#dc2626] transition-colors active:scale-95 flex-shrink-0"
+                    className="p-2.5 bg-white rounded-full shadow-sm border border-gray-100 text-gray-800 hover:text-[#dc2626] transition-colors active:scale-95"
                 >
                     <ArrowLeft size={22} />
                 </button>
-                <div className="flex-1 text-center">
+                <div className="flex-1 text-center pr-10">
                     <h1 className="text-xl md:text-2xl font-serif font-extrabold text-gray-900">
                         {isEN ? "The Details" : "Butiran"}
                     </h1>
@@ -225,19 +225,21 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                         {isEN ? "Tell us what you're selling" : "Kongsi sikit apa yang anda jual"}
                     </p>
                 </div>
-                <div className="flex-shrink-0">
-                    <SegmentedControl
-                        options={['Standard', 'Pro']}
-                        selected={isPro ? 'Pro' : 'Standard'}
-                        onChange={(val) => handleUpdate('isContextPro', val === 'Pro')}
-                        size="sm"
-                    />
-                </div>
             </header>
 
             {/* Form Body (No forced overflow, just let it stretch) */}
             <div className="px-4 md:px-6">
                 <div className="max-w-xl mx-auto space-y-5 pt-2">
+
+                    {/* Pro toggle (above-right of the first card) */}
+                    <div className="flex justify-end -mb-3">
+                        <SegmentedControl
+                            options={['STA', 'PRO']}
+                            selected={isPro ? 'PRO' : 'STA'}
+                            onChange={(val) => handleUpdate('isContextPro', val === 'PRO')}
+                            size="sm"
+                        />
+                    </div>
 
                     {/* Card 1: Dish & Price */}
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
@@ -288,6 +290,7 @@ export default function ContextConfigurationView({ appUILanguage, config, setCon
                             options={languageOptions}
                             selected={config.outputLanguage}
                             onChange={(val) => handleUpdate('outputLanguage', val)}
+                            className="w-full"
                         />
                     </div>
 

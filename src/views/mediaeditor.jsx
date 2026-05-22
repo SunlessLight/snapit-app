@@ -121,7 +121,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
     };
 
     const handleProToggle = (value) => {
-        const nextPro = value === 'Pro';
+        const nextPro = value === 'PRO';
         setMediaState(prev => ({ ...prev, isMediaEditorPro: nextPro }));
     };
 
@@ -237,17 +237,19 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
                 <section className="flex-1 flex flex-col justify-center animate-fade-in w-full min-h-0 max-w-3xl mx-auto pb-2 md:pb-4">
 
-                    {/* Hero Text + Pro Toggle */}
-                    <div className="flex items-center justify-between md:mb-6 flex-shrink-0 gap-3">
-                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3 flex-1 text-center md:text-left">{isEN ? "Let's make it pop." : "Jom kasi cun."}</h2>
-                        <div className="flex-shrink-0">
-                            <SegmentedControl
-                                options={['Standard', 'Pro']}
-                                selected={isPro ? 'Pro' : 'Standard'}
-                                onChange={handleProToggle}
-                                size="sm"
-                            />
-                        </div>
+                    {/* Hero Text */}
+                    <div className="text-center pt-4 md:mb-6 flex-shrink-0">
+                        <h2 className="font-serif text-2xl md:text-5xl font-extrabold mb-1 md:mb-3">{isEN ? "Let's make it pop." : "Jom kasi cun."}</h2>
+                    </div>
+
+                    {/* Pro toggle (above-right of the main card) */}
+                    <div className="flex justify-end mb-2 md:mb-3 flex-shrink-0">
+                        <SegmentedControl
+                            options={['STA', 'PRO']}
+                            selected={isPro ? 'PRO' : 'STA'}
+                            onChange={handleProToggle}
+                            size="sm"
+                        />
                     </div>
 
                     {/* FIX 2: The Main Container Card. Allowed it to expand its height dynamically by changing flex properties. */}
@@ -297,7 +299,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
                         {/* Middle: Interaction Zone */}
                         <div className="mt-4 md:mt-6 flex-shrink-0 min-h-[80px] md:min-h-[100px] flex items-center justify-center px-2">
-                            <div className="relative w-full max-w-sm mx-auto pt-6 md:pt-8">
+                            <div className="relative w-full max-w-sm mx-auto">
 
                                 {/* RESET BUTTON */}
                                 {controlState !== 'CROP' && (
@@ -369,7 +371,7 @@ export default function MediaEditorView({ appUILanguage, mediaState, setMediaSta
 
                                 {/* STATE: ADJUST */}
                                 {controlState === 'ADJUST' && (
-                                    <div className="flex flex-col gap-4 mt-1 md:mt-2 pt-4 animate-[fadeIn_0.2s_ease]">
+                                    <div className="flex flex-col gap-4 mt-6 md:mt-8 pt-4 animate-[fadeIn_0.2s_ease]">
                                         <div className="flex items-center gap-2 md:gap-3">
                                             <Sun size={16} className="md:w-[18px] md:h-[18px] text-gray-400" />
                                             <span className="w-16 md:w-20 text-[10px] md:text-xs font-medium text-gray-600">{isEN ? "Brightness" : "Kecerahan"}</span>

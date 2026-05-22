@@ -187,10 +187,6 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                                         src={originalImgSrc}
                                         alt="Original"
                                         className="w-full h-full object-contain"
-                                        style={{
-                                            // Vislual filter only - not saved to the image file itself
-                                            filter: `brightness(${mediaState.brightness * 2}%) contrast(${mediaState.contrast * 2}%) saturate(${mediaState.saturation * 2}%)`
-                                        }}
                                     />
                                 </div>
                             )}

@@ -100,7 +100,7 @@ export default function DashboardView({ appUILanguage, onImageSelect, onImageRem
                 <section className="flex-1 flex flex-col w-full min-h-0 animate-fade-in pb-2 md:pb-4">
 
                     {/* Hero Text - Margins tightened */}
-                    <div className="text-center mb-3 md:mb-6 flex-shrink-0">
+                    <div className="text-center pt-4 mb-3 md:mb-6 flex-shrink-0">
                         <h2 className="font-serif text-xl md:text-3xl font-extrabold mb-1 md:mb-3">{isEN ? "Drop a Photo" : "Muat Naik Gambar"}</h2>
                         <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">{isEN ? "We'll polish it and turn it into something worth sharing." : "Biar kami cantikkan gambar ni, sedia untuk dikongsi."}</p>
                     </div>
