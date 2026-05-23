@@ -33,6 +33,8 @@
       "cafe": { "label": "Modern Cafe", "desc": "Warm wooden table" },
       "street": { "label": "Street Food", "desc": "Night market vibes" },
       "premium": { "label": "Premium", "desc": "Clean & elegant" }
-    }
+    },
+    "descriptionLabel": "Describe Your Background",
+    "descriptionPlaceholder": "e.g., Marble countertop, soft morning light from the left, blurred plants in the background"
   }
 }

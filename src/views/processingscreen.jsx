@@ -28,6 +28,7 @@ export default function ProcessingScreen({
     const isContextPro = !!marketingConfig?.isContextPro;
     const description = marketingConfig?.description || "";
     const tone = marketingConfig?.tone || "";
+    const backgroundDescription = marketingConfig?.backgroundDescription || "";
 
     console.log("Current File:", mediaState.file)
 
@@ -73,6 +74,7 @@ export default function ProcessingScreen({
                 formData.append('isContextPro', isContextPro);
                 formData.append('description', description);
                 formData.append('tone', tone);
+                formData.append('backgroundDescription', backgroundDescription);
 
                 // STEP 1: Initial POST to start the job
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {

@@ -199,13 +199,20 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
         { id: 'modern', label: t('contextConfig:pro.tones.modern') },
     ];
 
+    // Background fields: Pro uses a free-form description (pills are disabled),
+    // Standard uses the vibe pill selection. Either path is only required when
+    // generateBackground is ON.
+    const bgFieldsReady = !config.generateBackground
+        || (isPro
+            ? (config.backgroundDescription?.trim() ?? "") !== ""
+            : config.backgroundVibe !== "");
+
     // Strict Validation: Check if ALL fields have values
     const isReady =
         (config.dishName?.trim() !== "" && config.dishName !== undefined) &&
         (config.price?.trim() !== "" && config.price !== undefined) &&
         (config.outputLanguage !== "") &&
-        (config.backgroundVibe !== "") &&
-        (!config.generateBackground || config.backgroundVibe !== "") &&
+        bgFieldsReady &&
         (!isPro || (config.description?.trim() !== "" && config.tone !== ""));
 
     return (
@@ -377,7 +384,7 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
 
                         </div>
 
-                        <div className={`grid grid-cols-2 gap-3 transition-opacity duration-300 ${!config.generateBackground ? 'opacity-40 pointer-events-none grayscale-[0.5]' : 'opacity-100'} `}>
+                        <div className={`grid grid-cols-2 gap-3 transition-opacity duration-300 ${(!config.generateBackground || isPro) ? 'opacity-40 pointer-events-none grayscale-[0.5]' : 'opacity-100'} `}>
                             {backgroundOptions.map((bg) => {
                                 const isSelected = config.backgroundVibe === bg.id;
                                 return (
@@ -412,6 +419,29 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                                 );
                             })}
                         </div>
+
+                        {/* Pro: free-form background description (replaces vibe pills) */}
+                        {isPro && config.generateBackground && (
+                            <div className="mt-4">
+                                <div className="flex items-center gap-2 mb-1.5 ml-1">
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                        {t('contextConfig:background.descriptionLabel')}
+                                    </label>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#dc2626] bg-red-50 px-2 py-0.5 rounded-full">PRO</span>
+                                </div>
+                                <textarea
+                                    rows={3}
+                                    maxLength={300}
+                                    placeholder={t('contextConfig:background.descriptionPlaceholder')}
+                                    value={config.backgroundDescription || ""}
+                                    onChange={(e) => handleUpdate('backgroundDescription', e.target.value)}
+                                    className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium resize-none"
+                                />
+                                <div className="mt-1 text-right text-[10px] text-gray-400">
+                                    {(config.backgroundDescription || "").length} / 300
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                 </div>

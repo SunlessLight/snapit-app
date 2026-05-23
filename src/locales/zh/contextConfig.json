@@ -33,6 +33,8 @@
       "cafe": { "label": "现代咖啡馆", "desc": "温暖木质桌面" },
       "street": { "label": "街头小食", "desc": "夜市氛围" },
       "premium": { "label": "高端", "desc": "干净优雅" }
-    }
+    },
+    "descriptionLabel": "自定义背景描述",
+    "descriptionPlaceholder": "例如:大理石台面,左侧柔和晨光,背景有模糊的绿植"
   }
 }

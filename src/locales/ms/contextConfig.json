@@ -33,6 +33,8 @@
       "cafe": { "label": "Kafe Moden", "desc": "Meja kayu & terang" },
       "street": { "label": "Pasar Malam", "desc": "Suasana pasar malam" },
       "premium": { "label": "Premium", "desc": "Bersih & eksklusif" }
-    }
+    },
+    "descriptionLabel": "Huraikan Latar Belakang Anda",
+    "descriptionPlaceholder": "cth., Meja marmar, cahaya pagi lembut dari kiri, tumbuhan kabur di belakang"
   }
 }

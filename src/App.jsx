@@ -51,6 +51,7 @@ const DEFAULT_MARKETING_CONFIG = {
   isContextPro: false,
   description: "",
   tone: "",
+  backgroundDescription: "",
 };
 
 const MEDIA_STATE_STORAGE_KEY = 'snapit:mediaState';
