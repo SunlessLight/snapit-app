@@ -166,7 +166,7 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
 
             <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0 pb-48 md:pb-56">
 
-                <div className="text-center mb-4 md:mb-8 flex-shrink-0">
+                <div className="text-center pt-4 mb-4 md:mb-8 flex-shrink-0">
                     <h1 className="font-serif text-2xl md:text-4xl font-extrabold mb-1 md:mb-3 tracking-tight">
                         {t('heading')}
                     </h1>

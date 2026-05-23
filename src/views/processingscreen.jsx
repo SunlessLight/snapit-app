@@ -54,6 +54,7 @@ export default function ProcessingScreen({
     useEffect(() => {
         let isMounted = true;
         let pollTimer = null;
+        const abortController = new AbortController();
         setError(null);
 
         const generateProAssets = async () => {
@@ -80,6 +81,7 @@ export default function ProcessingScreen({
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {
                     method: 'POST',
                     body: formData,
+                    signal: abortController.signal,
                 });
 
                 if (!response.ok) {
@@ -88,16 +90,27 @@ export default function ProcessingScreen({
                 }
 
                 const { jobId } = await response.json();
+                if (!isMounted) return;
 
                 // STEP 2: Start Polling the status endpoint
                 pollTimer = setInterval(async () => {
+                    if (!isMounted) {
+                        clearInterval(pollTimer);
+                        return;
+                    }
                     try {
-                        const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
+                        const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`, {
+                            signal: abortController.signal,
+                        });
 
+                        if (statusRes.status === 404) {
+                            clearInterval(pollTimer);
+                            if (isMounted) setError(t('errors.network'));
+                            return;
+                        }
                         if (!statusRes.ok) throw new Error("Failed to check job status.");
 
                         const job = await statusRes.json();
-
                         if (!isMounted) return;
 
                         if (job.status === 'completed') {
@@ -110,6 +123,7 @@ export default function ProcessingScreen({
                         }
                         // If status is 'processing', it just waits for the next 3s interval
                     } catch (pollErr) {
+                        if (pollErr.name === 'AbortError') return;
                         if (isMounted) {
                             clearInterval(pollTimer);
                             setError(pollErr.message);
@@ -118,6 +132,7 @@ export default function ProcessingScreen({
                 }, 3000); // Poll every 3 seconds
 
             } catch (err) {
+                if (err.name === 'AbortError') return;
                 if (!isMounted) return;
                 console.error("API Error:", err);
                 setError(err.message || t('errors.network'));
@@ -129,6 +144,7 @@ export default function ProcessingScreen({
         return () => {
             isMounted = false;
             if (pollTimer) clearInterval(pollTimer);
+            abortController.abort();
         };
     }, [selectedFile, dishName, price, outputLanguage, backgroundVibe, setAiOutput, onComplete, t]);
 
