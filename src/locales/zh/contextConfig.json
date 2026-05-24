@@ -16,14 +16,18 @@
     "heading": "Pro 上下文",
     "descriptionLabel": "描述",
     "descriptionPlaceholder": "例如:手工板面,槟城每日直送江鱼仔",
-    "toneLabel": "风格",
+    "toneLabel": "文案语气",
     "tones": {
-      "professional": "专业",
-      "funny": "幽默",
-      "casual": "随意",
-      "luxury": "高端",
-      "cozy": "温馨",
-      "modern": "现代"
+      "casual": "随意亲切",
+      "punchy": "简短利落",
+      "polished": "精致现代",
+      "playful": "俏皮逗趣"
+    },
+    "lengthLabel": "文案长度",
+    "lengths": {
+      "short": "短",
+      "medium": "中",
+      "long": "长"
     }
   },
   "background": {

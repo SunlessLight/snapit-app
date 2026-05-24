@@ -50,9 +50,13 @@ const DEFAULT_MARKETING_CONFIG = {
   generateBackground: true,
   isContextPro: false,
   description: "",
-  tone: "",
+  tone: "casual",
+  captionLength: "short",
   backgroundDescription: "",
 };
+
+const ALLOWED_TONES = new Set(['casual', 'punchy', 'polished', 'playful']);
+const ALLOWED_LENGTHS = new Set(['short', 'medium', 'long']);
 
 const MEDIA_STATE_STORAGE_KEY = 'snapit:mediaState';
 const MARKETING_CONFIG_STORAGE_KEY = 'snapit:marketingConfig';
@@ -110,9 +114,17 @@ export default function App() {
       processedUrl: null,
     };
   });
-  const [marketingConfig, setMarketingConfig] = useState(() =>
-    loadFromStorage(MARKETING_CONFIG_STORAGE_KEY, DEFAULT_MARKETING_CONFIG)
-  );
+  const [marketingConfig, setMarketingConfig] = useState(() => {
+    const stored = loadFromStorage(MARKETING_CONFIG_STORAGE_KEY, DEFAULT_MARKETING_CONFIG);
+    // Migrate: pre-redesign localStorage may carry legacy tones (funny/luxury/etc) or
+    // no captionLength at all. Reset invalid values to Standard defaults so the Pro
+    // pickers boot in a valid state instead of unselected/crashed.
+    return {
+      ...stored,
+      tone: ALLOWED_TONES.has(stored.tone) ? stored.tone : 'casual',
+      captionLength: ALLOWED_LENGTHS.has(stored.captionLength) ? stored.captionLength : 'short',
+    };
+  });
   const [aiOutput, setAiOutput] = useState(DEFAULT_AI_OUTPUT);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [headerHeight, setHeaderHeight] = useState(0);

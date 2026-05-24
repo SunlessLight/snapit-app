@@ -16,14 +16,18 @@
     "heading": "Pro Context",
     "descriptionLabel": "Description",
     "descriptionPlaceholder": "e.g., Handmade pan-mee with anchovies sourced daily from Penang",
-    "toneLabel": "Tone",
+    "toneLabel": "Caption Tone",
     "tones": {
-      "professional": "Professional",
-      "funny": "Funny",
-      "casual": "Casual",
-      "luxury": "Luxury",
-      "cozy": "Cozy",
-      "modern": "Modern"
+      "casual": "Casual & Friendly",
+      "punchy": "Short & Punchy",
+      "polished": "Polished & Modern",
+      "playful": "Playful & Cheeky"
+    },
+    "lengthLabel": "Caption Length",
+    "lengths": {
+      "short": "Short",
+      "medium": "Medium",
+      "long": "Long"
     }
   },
   "background": {

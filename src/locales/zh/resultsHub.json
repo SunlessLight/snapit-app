@@ -3,14 +3,16 @@
   "subheading": "复制、下载、分享,一键搞定。",
   "labels": {
     "aiEnhanced": "AI 增强版",
+    "edited": "你的编辑",
     "original": "原图",
     "title": "吸睛标题",
     "description": "描述",
     "caption": "社交文案 + 标签"
   },
   "download": {
-    "enhanced": "下载增强版图片",
-    "originalEdit": "下载原图",
+    "enhanced": "下载 AI 图片",
+    "edited": "下载编辑版",
+    "original": "下载原图",
     "image": "下载图片"
   },
   "share": "分享到社交媒体",

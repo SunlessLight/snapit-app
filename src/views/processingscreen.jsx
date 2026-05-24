@@ -27,7 +27,8 @@ export default function ProcessingScreen({
     const isMediaEditorPro = !!mediaState?.isMediaEditorPro;
     const isContextPro = !!marketingConfig?.isContextPro;
     const description = marketingConfig?.description || "";
-    const tone = marketingConfig?.tone || "";
+    const tone = marketingConfig?.tone || "casual";
+    const captionLength = marketingConfig?.captionLength || "short";
     const backgroundDescription = marketingConfig?.backgroundDescription || "";
 
     console.log("Current File:", mediaState.file)
@@ -75,6 +76,7 @@ export default function ProcessingScreen({
                 formData.append('isContextPro', isContextPro);
                 formData.append('description', description);
                 formData.append('tone', tone);
+                formData.append('captionLength', captionLength);
                 formData.append('backgroundDescription', backgroundDescription);
 
                 // STEP 1: Initial POST to start the job

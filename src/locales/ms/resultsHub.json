@@ -1,8 +1,9 @@
 {
   "heading": "Aset Pemasaran Anda",
-  "subheading": "Dah siap! Sedia untuk di-copy, muat turun, dan kongsi.",
+  "subheading": "Dah siap! Sedia untuk disalin, muat turun, dan kongsi.",
   "labels": {
     "aiEnhanced": "Hasil Sentuhan AI",
+    "edited": "Sunting Anda",
     "original": "Asal",
     "title": "Tajuk Menarik",
     "description": "Penerangan",
@@ -10,7 +11,8 @@
   },
   "download": {
     "enhanced": "Muat Turun Gambar AI",
-    "originalEdit": "Muat Turun Gambar Asal",
+    "edited": "Muat Turun Suntingan",
+    "original": "Muat Turun Gambar Asal",
     "image": "Muat Turun Gambar"
   },
   "share": "Kongsi ke Media Sosial",

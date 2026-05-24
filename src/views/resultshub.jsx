@@ -88,14 +88,19 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
 
     const originalImgSrc = mediaState.url;
     const hasAiImage = Boolean(aiOutput?.generatedImageBase64);
-    let aiImgSrc = null;
 
+    let aiImgSrc = null;
     if (hasAiImage) {
         const hasDataPrefix = aiOutput.generatedImageBase64.startsWith('data:image');
         aiImgSrc = hasDataPrefix
             ? aiOutput.generatedImageBase64
             : `data:image/jpeg;base64,${aiOutput.generatedImageBase64}`;
     }
+
+    // "Final" = whatever the user should compare against the raw upload.
+    // AI bg-swap output wins; otherwise the filter-baked JPEG; otherwise the raw itself.
+    const finalImgSrc = aiImgSrc || mediaState.processedUrl || originalImgSrc;
+    const showSlider = Boolean(finalImgSrc && originalImgSrc && finalImgSrc !== originalImgSrc);
 
     const handleUpdateText = (key, value) => {
         setAiOutput(prev => ({ ...prev, [key]: value }));
@@ -107,17 +112,18 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
     };
 
     const handleDownload = async () => {
-        const isShowingAI = hasAiImage && sliderValue >= 50;
+        const showingFinal = showSlider ? sliderValue >= 50 : true;
 
         const cleanName = aiOutput.title
             ? aiOutput.title.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')
             : 'Dish';
 
-        const fileName = isShowingAI
-            ? `${cleanName}_SnapIT_AI.png`
+        const finalSuffix = hasAiImage ? 'SnapIT_AI' : 'SnapIT_Edit';
+        const fileName = showingFinal
+            ? `${cleanName}_${finalSuffix}.png`
             : `${cleanName}_Original.png`;
 
-        const targetUrl = isShowingAI ? aiImgSrc : mediaState.processedUrl;
+        const targetUrl = showingFinal ? finalImgSrc : originalImgSrc;
 
         if (!targetUrl) return;
 
@@ -131,7 +137,7 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
 
     const handleGlobalShare = async () => {
         const combinedText = `${aiOutput.title}\n\n${aiOutput.description}\n\n${aiOutput.caption}`;
-        const targetShareUrl = hasAiImage ? aiImgSrc : mediaState.processedUrl;
+        const targetShareUrl = finalImgSrc;
 
         try {
             const response = await fetch(targetShareUrl);
@@ -192,15 +198,15 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                                 </div>
                             )}
 
-                            {hasAiImage && (
+                            {showSlider && (
                                 <>
                                     <div
                                         className="absolute inset-0 w-full h-full bg-[#fff8f6] pointer-events-none"
                                         style={{ clipPath: `inset(0 ${100 - sliderValue}% 0 0)` }}
                                     >
                                         <img
-                                            src={aiImgSrc}
-                                            alt="AI Enhanced"
+                                            src={finalImgSrc}
+                                            alt={hasAiImage ? "AI Enhanced" : "Edited"}
                                             className="w-full h-full object-contain"
                                         />
                                     </div>
@@ -222,7 +228,7 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                                     </div>
 
                                     <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                        {t('labels.aiEnhanced')}
+                                        {hasAiImage ? t('labels.aiEnhanced') : t('labels.edited')}
                                     </div>
                                     <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
                                         {t('labels.original')}
@@ -235,14 +241,16 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                         {/* The "Smart" Single Download Button - Context aware */}
                         <button
                             onClick={handleDownload}
-                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${hasAiImage && sliderValue >= 50
+                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${showSlider && sliderValue >= 50
                                 ? 'bg-[#dc2626] text-white hover:brightness-90 md:hover:-translate-y-1'
                                 : 'bg-white border-2 border-gray-200 text-[#1a0f0d] hover:border-gray-300'
                                 }`}
                         >
                             <Download size={18} />
-                            {hasAiImage
-                                ? (sliderValue >= 50 ? t('download.enhanced') : t('download.originalEdit'))
+                            {showSlider
+                                ? (sliderValue >= 50
+                                    ? (hasAiImage ? t('download.enhanced') : t('download.edited'))
+                                    : t('download.original'))
                                 : t('download.image')}
                         </button>
                     </section>

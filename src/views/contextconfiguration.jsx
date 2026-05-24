@@ -191,12 +191,16 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
     const isPro = !!config.isContextPro;
 
     const toneOptions = [
-        { id: 'professional', label: t('contextConfig:pro.tones.professional') },
-        { id: 'funny', label: t('contextConfig:pro.tones.funny') },
         { id: 'casual', label: t('contextConfig:pro.tones.casual') },
-        { id: 'luxury', label: t('contextConfig:pro.tones.luxury') },
-        { id: 'cozy', label: t('contextConfig:pro.tones.cozy') },
-        { id: 'modern', label: t('contextConfig:pro.tones.modern') },
+        { id: 'punchy', label: t('contextConfig:pro.tones.punchy') },
+        { id: 'polished', label: t('contextConfig:pro.tones.polished') },
+        { id: 'playful', label: t('contextConfig:pro.tones.playful') },
+    ];
+
+    const lengthOptions = [
+        { id: 'short', label: t('contextConfig:pro.lengths.short') },
+        { id: 'medium', label: t('contextConfig:pro.lengths.medium') },
+        { id: 'long', label: t('contextConfig:pro.lengths.long') },
     ];
 
     // Background fields: Pro uses a free-form description (pills are disabled),
@@ -207,13 +211,15 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
             ? (config.backgroundDescription?.trim() ?? "") !== ""
             : config.backgroundVibe !== "");
 
-    // Strict Validation: Check if ALL fields have values
+    // Strict Validation: Check if ALL fields have values.
+    // Tone + captionLength always have Standard defaults — only the free-form
+    // description still needs to be non-empty when Pro is on.
     const isReady =
         (config.dishName?.trim() !== "" && config.dishName !== undefined) &&
         (config.price?.trim() !== "" && config.price !== undefined) &&
         (config.outputLanguage !== "") &&
         bgFieldsReady &&
-        (!isPro || (config.description?.trim() !== "" && config.tone !== ""));
+        (!isPro || config.description?.trim() !== "");
 
     return (
         <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
@@ -327,7 +333,7 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                                     <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
                                         {t('contextConfig:pro.toneLabel')}
                                     </label>
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-2 gap-2">
                                         {toneOptions.map((opt) => {
                                             const isSelected = config.tone === opt.id;
                                             return (
@@ -335,6 +341,29 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                                                     key={opt.id}
                                                     type="button"
                                                     onClick={() => handleUpdate('tone', opt.id)}
+                                                    className={`py-2.5 px-2 rounded-xl text-xs md:text-sm font-semibold border-[1.5px] transition-all active:scale-95 ${isSelected
+                                                        ? 'border-[#dc2626] text-[#dc2626] bg-red-50/50'
+                                                        : 'border-gray-200 text-gray-500 bg-white hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                                        {t('contextConfig:pro.lengthLabel')}
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {lengthOptions.map((opt) => {
+                                            const isSelected = config.captionLength === opt.id;
+                                            return (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => handleUpdate('captionLength', opt.id)}
                                                     className={`py-2.5 px-2 rounded-xl text-xs md:text-sm font-semibold border-[1.5px] transition-all active:scale-95 ${isSelected
                                                         ? 'border-[#dc2626] text-[#dc2626] bg-red-50/50'
                                                         : 'border-gray-200 text-gray-500 bg-white hover:border-gray-300'

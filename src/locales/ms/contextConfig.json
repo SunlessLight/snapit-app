@@ -16,14 +16,18 @@
     "heading": "Konteks Pro",
     "descriptionLabel": "Penerangan",
     "descriptionPlaceholder": "cth., Mee tarik dengan ikan bilis dari Penang setiap hari",
-    "toneLabel": "Nada",
+    "toneLabel": "Nada Kapsyen",
     "tones": {
-      "professional": "Profesional",
-      "funny": "Lucu",
-      "casual": "Santai",
-      "luxury": "Mewah",
-      "cozy": "Mesra",
-      "modern": "Moden"
+      "casual": "Santai & Mesra",
+      "punchy": "Padat & Tegas",
+      "polished": "Kemas & Moden",
+      "playful": "Suka-suka"
+    },
+    "lengthLabel": "Panjang Kapsyen",
+    "lengths": {
+      "short": "Pendek",
+      "medium": "Sederhana",
+      "long": "Panjang"
     }
   },
   "background": {

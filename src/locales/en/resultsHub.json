@@ -3,14 +3,16 @@
   "subheading": "Ready to copy, download, and share.",
   "labels": {
     "aiEnhanced": "AI Enhanced",
+    "edited": "Your Edit",
     "original": "Original",
     "title": "Catchy Title",
     "description": "Description",
     "caption": "Social Caption + Tags"
   },
   "download": {
-    "enhanced": "Download Enhanced Image",
-    "originalEdit": "Download Original Edit",
+    "enhanced": "Download AI Image",
+    "edited": "Download Edit",
+    "original": "Download Original",
     "image": "Download Image"
   },
   "share": "Share to Social Media",
