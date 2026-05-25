@@ -21,8 +21,11 @@ import {
     RectangleHorizontal,
     Smartphone,
     Monitor,
+    Loader2,
     Image as ImageIcon
 } from 'lucide-react';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { useTranslation } from 'react-i18next';
@@ -79,6 +82,32 @@ function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
     return centerCrop(makeAspectCrop({ unit: '%', width: 90 }, aspect, mediaWidth, mediaHeight), mediaWidth, mediaHeight);
 }
 
+// Crop a Blob to a rect already expressed in the blob's natural pixel coordinates.
+// Used to re-apply the user's composite crop to Claid's enhanced full-size response,
+// which comes back at the original image's dimensions. Different convention from
+// getCroppedImg (display-pixels + an HTMLImageElement) so kept as a separate helper.
+async function cropBlobToRect(blob, rect) {
+    const url = URL.createObjectURL(blob);
+    try {
+        const img = await new Promise((resolve, reject) => {
+            const el = new Image();
+            el.onload = () => resolve(el);
+            el.onerror = reject;
+            el.src = url;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(rect.width);
+        canvas.height = Math.floor(rect.height);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+        return await new Promise((resolve, reject) => {
+            canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas empty')), 'image/jpeg', 0.95);
+        });
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+}
+
 export default function MediaEditorView({ mediaState, setMediaState, onNext, onPrev }) {
     const { t } = useTranslation(['mediaEditor', 'common']);
     // UI State Machine: 'DEFAULT' | 'ADJUST' | 'CROP'
@@ -87,6 +116,7 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
     // Logic States
     const [cachedValues, setCachedValues] = useState(null);
     const [isProcessingCrop, setIsProcessingCrop] = useState(false);
+    const [isEnhancing, setIsEnhancing] = useState(false);
     const [crop, setCrop] = useState();
     const [completedCrop, setCompletedCrop] = useState(null);
     const imgRef = useRef(null);
@@ -127,22 +157,92 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
     };
 
     // --- Actions ---
-    const handleAutoEnhance = () => {
-        if (!activeImg.isEnhanced) {
-            setCachedValues({
-                b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation,
-                h: activeImg.hue, bl: activeImg.blur, sh: activeImg.sharpness, v: activeImg.vignette
+    // Dummy slider-nudge: kept as the failure fallback so the button is never a dead end
+    // when Claid is unreachable. Same delta values as the pre-Phase-6 placeholder UX.
+    const applyDummyEnhance = () => {
+        setCachedValues({
+            b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation,
+            h: activeImg.hue, bl: activeImg.blur, sh: activeImg.sharpness, v: activeImg.vignette
+        });
+        setMediaState(prev => ({ ...prev, brightness: 53, contrast: 54, saturation: 58, isEnhanced: true }));
+    };
+
+    const handleAutoEnhance = async () => {
+        if (isEnhancing) return;
+
+        // Revert path. Restores image only — slider values are intentionally not
+        // touched here (per Phase 6 spec). If we came from the dummy fallback we still
+        // have cachedValues, so restore those too; otherwise sliders stay where they are.
+        if (activeImg.isEnhanced) {
+            setMediaState(prev => {
+                if (prev.url && prev.url !== prev.preEnhanceUrl) URL.revokeObjectURL(prev.url);
+                const restoredSliders = cachedValues ? {
+                    brightness: cachedValues.b, contrast: cachedValues.c, saturation: cachedValues.s,
+                    hue: cachedValues.h ?? prev.hue, blur: cachedValues.bl ?? prev.blur,
+                    sharpness: cachedValues.sh ?? prev.sharpness, vignette: cachedValues.v ?? prev.vignette,
+                } : {};
+                return {
+                    ...prev,
+                    ...restoredSliders,
+                    file: prev.preEnhanceFile ?? prev.file,
+                    url: prev.preEnhanceUrl ?? prev.url,
+                    preEnhanceFile: null,
+                    preEnhanceUrl: null,
+                    isEnhanced: false,
+                };
             });
-            setMediaState(prev => ({ ...prev, brightness: 53, contrast: 54, saturation: 58, isEnhanced: true }));
-        } else {
+            setCachedValues(null);
+            return;
+        }
+
+        // Enhance path. Requires originalFile (set on upload). Defensive guard for the
+        // demo-image case where the user lands in step 2 without uploading anything.
+        if (!activeImg.originalFile) {
+            applyDummyEnhance();
+            return;
+        }
+
+        setIsEnhancing(true);
+        const controller = new AbortController();
+        try {
+            const formData = new FormData();
+            formData.append('image', activeImg.originalFile);
+
+            const response = await fetch(`${API_BASE_URL}/api/enhance`, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`Enhance failed: HTTP ${response.status}`);
+            }
+
+            const claidBlob = await response.blob();
+            const finalBlob = activeImg.compositeCropRect
+                ? await cropBlobToRect(claidBlob, activeImg.compositeCropRect)
+                : claidBlob;
+
+            const newUrl = URL.createObjectURL(finalBlob);
             setMediaState(prev => ({
                 ...prev,
-                brightness: cachedValues.b, contrast: cachedValues.c, saturation: cachedValues.s,
-                hue: cachedValues.h ?? prev.hue, blur: cachedValues.bl ?? prev.blur,
-                sharpness: cachedValues.sh ?? prev.sharpness, vignette: cachedValues.v ?? prev.vignette,
-                isEnhanced: false
+                file: finalBlob,
+                url: newUrl,
+                preEnhanceFile: prev.file,
+                preEnhanceUrl: prev.url,
+                isEnhanced: true,
+                // Claid bakes brightness/contrast/saturation. Reset CSS-filter sliders so
+                // any subsequent user tweak is additive, not compounded on top.
+                brightness: 50, contrast: 50, saturation: 50,
+                hue: 50, blur: 0, sharpness: 0, vignette: 0,
             }));
             setCachedValues(null);
+        } catch (err) {
+            console.error('Claid enhance failed, falling back to dummy slider-nudge:', err);
+            alert(t('mediaEditor:enhance.failed'));
+            applyDummyEnhance();
+        } finally {
+            setIsEnhancing(false);
         }
     };
 
@@ -161,9 +261,37 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
             const newBlob = await getCroppedImg(imgRef.current, completedCrop);
             const newUrl = URL.createObjectURL(newBlob);
 
+            // Convert the displayed-pixel crop into natural pixels of the *current*
+            // mediaState.file. If a composite rect already exists (user has cropped
+            // before), this new crop is relative to a sub-rect of the original — but
+            // since getCroppedImg never resamples, the sub-rect's natural pixels equal
+            // its own dimensions, so the composition is plain translation.
+            const el = imgRef.current;
+            const scaleX = el.naturalWidth / el.width;
+            const scaleY = el.naturalHeight / el.height;
+            const newRect = {
+                x: completedCrop.x * scaleX,
+                y: completedCrop.y * scaleY,
+                width: completedCrop.width * scaleX,
+                height: completedCrop.height * scaleY,
+            };
+
             setMediaState(prev => {
                 if (prev.url) URL.revokeObjectURL(prev.url);
-                return { ...prev, file: newBlob, url: newUrl };
+                const composed = prev.compositeCropRect
+                    ? {
+                        x: prev.compositeCropRect.x + newRect.x,
+                        y: prev.compositeCropRect.y + newRect.y,
+                        width: newRect.width,
+                        height: newRect.height,
+                    }
+                    : newRect;
+                return {
+                    ...prev,
+                    file: newBlob,
+                    url: newUrl,
+                    compositeCropRect: composed,
+                };
             });
 
             setControlState('DEFAULT');
@@ -244,7 +372,7 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                     </div>
 
                     {/* Pro toggle (above-right of the main card) */}
-                    <div className="flex justify-end mb-2 md:mb-3 flex-shrink-0">
+                    <div className={`flex justify-end mb-2 md:mb-3 flex-shrink-0 ${isEnhancing ? 'opacity-50 pointer-events-none' : ''}`}>
                         <SegmentedControl
                             options={['STA', 'PRO']}
                             selected={isPro ? 'PRO' : 'STA'}
@@ -282,7 +410,7 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                                     <img
                                         src={activeImg.url}
                                         alt="Preview"
-                                        className="max-w-full max-h-full object-contain transition-all duration-300 rounded-md"
+                                        className={`max-w-full max-h-full object-contain transition-all duration-300 rounded-md ${isEnhancing ? 'opacity-50' : ''}`}
                                         style={imageFilters}
                                     />
                                     {vignetteOpacity > 0 && (
@@ -293,6 +421,14 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                                                 opacity: vignetteOpacity
                                             }}
                                         />
+                                    )}
+                                    {isEnhancing && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/10 rounded-md pointer-events-auto">
+                                            <Loader2 size={32} className="animate-spin text-white drop-shadow-lg" />
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-white drop-shadow-lg">
+                                                {t('mediaEditor:enhance.loading')}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -306,7 +442,8 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                                 {controlState !== 'CROP' && (
                                     <button
                                         onClick={handleReset}
-                                        className={`absolute top-0 ${controlState === 'ADJUST' ? 'left-0' : 'right-0'} p-2 rounded-full bg-gray-50 text-gray-400 md:hover:bg-gray-100 md:hover:text-gray-700 active:scale-95 transition-all`}
+                                        disabled={isEnhancing}
+                                        className={`absolute top-0 ${controlState === 'ADJUST' ? 'left-0' : 'right-0'} p-2 rounded-full bg-gray-50 text-gray-400 md:hover:bg-gray-100 md:hover:text-gray-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                                         title={t('mediaEditor:actions.resetTitle')}
                                     >
                                         <RotateCcw size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={2.5} />
@@ -330,7 +467,8 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                                         <div className="flex flex-col items-center gap-1.5 md:gap-2">
                                             <button
                                                 onClick={handleAutoEnhance}
-                                                className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${activeImg.isEnhanced
+                                                disabled={isEnhancing}
+                                                className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${activeImg.isEnhanced
                                                     ? 'bg-white border border-gray-100 ai-shine-active'
                                                     : 'bg-gray-50 md:hover:bg-gray-100'
                                                     }`}
@@ -346,7 +484,8 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                                         <div className="flex flex-col items-center gap-1.5 md:gap-2">
                                             <button
                                                 onClick={() => setControlState('CROP')}
-                                                className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gray-50 text-gray-700 md:hover:bg-gray-100 flex items-center justify-center transition-all"
+                                                disabled={isEnhancing}
+                                                className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gray-50 text-gray-700 md:hover:bg-gray-100 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <CropIcon size={20} className="md:w-6 md:h-6" />
                                             </button>
@@ -359,7 +498,8 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                                         <div className="flex flex-col items-center gap-1.5 md:gap-2">
                                             <button
                                                 onClick={() => setControlState('ADJUST')}
-                                                className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gray-50 text-gray-700 md:hover:bg-gray-100 flex items-center justify-center transition-all"
+                                                disabled={isEnhancing}
+                                                className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gray-50 text-gray-700 md:hover:bg-gray-100 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <SlidersHorizontal size={20} className="md:w-6 md:h-6" />
                                             </button>
@@ -482,7 +622,7 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                         <div className="mt-auto pt-5 flex flex-col gap-2.5 max-w-xs mx-auto w-full flex-shrink-0">
                             <button
                                 onClick={onNext}
-                                disabled={controlState === 'CROP' || isProcessingCrop}
+                                disabled={controlState === 'CROP' || isProcessingCrop || isEnhancing}
                                 className="bg-[#dc2626] text-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-semibold shadow-[0_8px_20px_rgba(220,38,38,0.25)] md:hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                             >
                                 {t('common:next')} <ArrowRight size={16} className="md:w-[18px] md:h-[18px]" />
@@ -490,7 +630,7 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
 
                             <button
                                 onClick={onPrev}
-                                disabled={controlState === 'CROP' || isProcessingCrop}
+                                disabled={controlState === 'CROP' || isProcessingCrop || isEnhancing}
                                 className="border-[1.5px] md:border-2 border-[#e5d5d0] text-[#1a0f0d] bg-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-semibold md:hover:border-[#dc2626] md:hover:text-[#dc2626] active:bg-gray-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ArrowLeft size={16} className="md:w-[18px] md:h-[18px]" /> {t('common:back')}

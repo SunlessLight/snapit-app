@@ -40,6 +40,15 @@ const DEFAULT_MEDIA_STATE = {
   isEnhanced: false,
   processedFile: null,
   processedUrl: null,
+  // Phase 6: untouched upload + crop region tracking. Claid enhance always operates
+  // on originalFile; compositeCropRect (natural pixels of originalFile) is re-applied
+  // to Claid's response so prior crops survive an enhance.
+  originalFile: null,
+  originalUrl: null,
+  compositeCropRect: null,
+  // Pre-enhance blob/url for the "second click reverts" UX. Stripped from persistence.
+  preEnhanceFile: null,
+  preEnhanceUrl: null,
 };
 // const DEFAULT_MARKETING_CONFIG = { dishName: "Nasi Lemak", price: "RM 12", outputLanguage: "english", backgroundVibe: "Premium" };
 const DEFAULT_MARKETING_CONFIG = {
@@ -61,9 +70,16 @@ const ALLOWED_LENGTHS = new Set(['short', 'medium', 'long']);
 const MEDIA_STATE_STORAGE_KEY = 'snapit:mediaState';
 const MARKETING_CONFIG_STORAGE_KEY = 'snapit:marketingConfig';
 
-// Strip non-serializable fields (File objects, blob: URLs) before persisting
+// Strip non-serializable fields (File objects, blob: URLs) before persisting.
+// compositeCropRect is a plain object and persists fine; isEnhanced is dropped because
+// the Blob it points at can't survive a reload — restoring isEnhanced=true without the
+// pre-enhance blob would leave the UI in a half-state where revert silently does nothing.
 const pickSerializableMediaState = (state) => {
-  const { file, processedFile, url, processedUrl, ...rest } = state;
+  const {
+    file, processedFile, url, processedUrl,
+    originalFile, originalUrl, preEnhanceFile, preEnhanceUrl, isEnhanced,
+    ...rest
+  } = state;
   return {
     ...rest,
     url: typeof url === 'string' && !url.startsWith('blob:') ? url : null,
@@ -112,6 +128,11 @@ export default function App() {
       processedFile: null,
       url: stored.url || foodImage,
       processedUrl: null,
+      originalFile: null,
+      originalUrl: null,
+      preEnhanceFile: null,
+      preEnhanceUrl: null,
+      isEnhanced: false,
     };
   });
   const [marketingConfig, setMarketingConfig] = useState(() => {
@@ -150,12 +171,22 @@ export default function App() {
   const handleImageSelect = useCallback((file, previewUrl) => {
     setMediaState(prev => {
       if (prev.processedUrl) URL.revokeObjectURL(prev.processedUrl);
+      if (prev.originalUrl && prev.originalUrl !== prev.url) URL.revokeObjectURL(prev.originalUrl);
+      if (prev.preEnhanceUrl) URL.revokeObjectURL(prev.preEnhanceUrl);
+      // Mint a separate blob URL for `originalUrl` so it survives crop's revoke-of-url.
+      const originalUrl = URL.createObjectURL(file);
       return {
         ...prev,
         file: file,
         url: previewUrl,
         processedFile: null,
-        processedUrl: null
+        processedUrl: null,
+        originalFile: file,
+        originalUrl,
+        compositeCropRect: null,
+        preEnhanceFile: null,
+        preEnhanceUrl: null,
+        isEnhanced: false,
       }
     });
   }, []);
@@ -164,6 +195,8 @@ export default function App() {
     setMediaState(prev => {
       if (prev.url) URL.revokeObjectURL(prev.url);
       if (prev.processedUrl) URL.revokeObjectURL(prev.processedUrl);
+      if (prev.originalUrl) URL.revokeObjectURL(prev.originalUrl);
+      if (prev.preEnhanceUrl) URL.revokeObjectURL(prev.preEnhanceUrl);
       return DEFAULT_MEDIA_STATE;
     });
   }, []);
@@ -172,6 +205,8 @@ export default function App() {
     setMediaState(prev => {
       if (prev.url) URL.revokeObjectURL(prev.url);
       if (prev.processedUrl) URL.revokeObjectURL(prev.processedUrl);
+      if (prev.originalUrl) URL.revokeObjectURL(prev.originalUrl);
+      if (prev.preEnhanceUrl) URL.revokeObjectURL(prev.preEnhanceUrl);
       return DEFAULT_MEDIA_STATE;
     });
     setMarketingConfig(DEFAULT_MARKETING_CONFIG);

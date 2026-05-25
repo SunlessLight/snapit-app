@@ -18,5 +18,9 @@
   "proLabel": "Pro",
   "crop": {
     "applyFailed": "Failed to apply crop."
+  },
+  "enhance": {
+    "loading": "Enhancing...",
+    "failed": "AI enhance failed. Applied a basic touch-up instead."
   }
 }

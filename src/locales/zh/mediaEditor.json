@@ -18,5 +18,9 @@
   "proLabel": "Pro",
   "crop": {
     "applyFailed": "裁剪失败。"
+  },
+  "enhance": {
+    "loading": "增强中...",
+    "failed": "AI 增强失败，已套用基本调整。"
   }
 }
