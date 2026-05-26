@@ -86,7 +86,7 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
     const [sliderValue, setSliderValue] = useState(100);
     const [toastMessage, setToastMessage] = useState(null);
 
-    const originalImgSrc = mediaState.url;
+    const originalImgSrc = mediaState.originalUrl || mediaState.url;
     const hasAiImage = Boolean(aiOutput?.generatedImageBase64);
 
     let aiImgSrc = null;
