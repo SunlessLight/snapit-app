@@ -1,0 +1,27 @@
+{
+  "button": {
+    "label": "Tangkap Berpandu"
+  },
+  "permission": {
+    "requesting": "Memulakan kamera...",
+    "denied": "Akses kamera diperlukan",
+    "deniedHint": "Benarkan kamera dalam tetapan pelayar anda, atau gunakan butang Ambil Gambar.",
+    "fallbackButton": "Tutup"
+  },
+  "warnings": {
+    "tiltLeft": "Senget kiri {{degrees}}°",
+    "tiltRight": "Senget kanan {{degrees}}°",
+    "tooDark": "Terlalu gelap",
+    "tooBright": "Terlalu terang",
+    "blurry": "Pegang stabil — kabur"
+  },
+  "hints": {
+    "topDown": "Sudut atas",
+    "angle45": "Sudut 45°",
+    "ready": "Bagus"
+  },
+  "ui": {
+    "shutterAlt": "Ambil gambar",
+    "closeAlt": "Tutup kamera"
+  }
+}

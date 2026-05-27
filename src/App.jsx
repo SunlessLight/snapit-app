@@ -6,6 +6,7 @@ import DashboardView from './views/dashboard';
 import MediaEditorView from './views/mediaeditor';
 import ContextConfigurationView from './views/contextconfiguration';
 import ProcessingScreen from './views/processingscreen';
+import ReviewScreen from './views/reviewscreen';
 import ResultsHubView from './views/resultshub';
 import LoginScreen from './views/loginscreen';
 import foodImage from './assets/food_image.webp';
@@ -62,6 +63,10 @@ const DEFAULT_MARKETING_CONFIG = {
   tone: "casual",
   captionLength: "short",
   backgroundDescription: "",
+  // Assistive mode: Pro users land on Review (step 5) instead of skipping to Results
+  // Hub (step 6). Defaults true so first-time Pro users get the in-loop experience;
+  // they can opt out via the toggle in Context Config and that choice persists.
+  assistiveMode: true,
 };
 
 const ALLOWED_TONES = new Set(['casual', 'punchy', 'polished', 'playful']);
@@ -154,8 +159,17 @@ export default function App() {
   const isProcessingScreen = currentStep === 4;
   const showHeader = isAuthenticated && currentStep > 0;
 
-  const nextStep = useCallback(() => setCurrentStep((prev) => Math.min(prev + 1, 5)), []);
+  const nextStep = useCallback(() => setCurrentStep((prev) => Math.min(prev + 1, 6)), []);
   const prevStep = useCallback(() => setCurrentStep((prev) => Math.max(prev - 1, 1)), []);
+
+  // ProcessingScreen calls this when the LLM job is done. Pro+assistive lands on
+  // the Review screen (step 5); everyone else skips it and goes straight to
+  // Results Hub (step 6). Routing decision lives here, not in ProcessingScreen,
+  // so the processing screen stays unaware of the assistive concept.
+  const handleProcessingComplete = useCallback(() => {
+    const goReview = !!marketingConfig.isContextPro && !!marketingConfig.assistiveMode;
+    setCurrentStep(goReview ? 5 : 6);
+  }, [marketingConfig.isContextPro, marketingConfig.assistiveMode]);
 
   // Navigate to LoginScreen from WelcomeScreen
   const handleShowLogin = useCallback(() => {
@@ -348,8 +362,10 @@ export default function App() {
         return <ContextConfigurationView userName={userName} mediaState={mediaState} setMediaState={setMediaState} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
       case 4:
         // Added the missing props so the component can read the form data
-        return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={nextStep} onPrev={prevStep} />;
+        return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onPrev={prevStep} />;
       case 5:
+        return <ReviewScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onNext={nextStep} onPrev={prevStep} />;
+      case 6:
         return <ResultsHubView userName={userName} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
       default:
         return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
@@ -381,7 +397,7 @@ export default function App() {
         {showHeader && (
           <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
             <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
-            <DynamicTimeline currentStep={currentStep} />
+            <DynamicTimeline currentStep={currentStep} showReview={!!marketingConfig.isContextPro && !!marketingConfig.assistiveMode} />
           </div>
         )}
       </div>

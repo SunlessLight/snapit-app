@@ -2,9 +2,12 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export default function DynamicTimeline({ currentStep }) {
+export default function DynamicTimeline({ currentStep, showReview = false }) {
     const { t } = useTranslation('timeline');
-    const steps = [1, 2, 3, 4, 5].map(num => ({ num, label: t(`steps.${num}`) }));
+    // Assistive Pro users get the Review step (5) between AI Magic (4) and Result (6).
+    // Everyone else sees a 5-dot timeline and jumps straight from AI Magic to Result.
+    const stepNums = showReview ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 6];
+    const steps = stepNums.map(num => ({ num, label: t(`steps.${num}`) }));
 
     return (
         // Sticky wrapper that floats at the top

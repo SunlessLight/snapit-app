@@ -40,5 +40,11 @@
     },
     "descriptionLabel": "Describe Your Background",
     "descriptionPlaceholder": "e.g., Marble countertop, soft morning light from the left, blurred plants in the background"
+  },
+  "assistive": {
+    "heading": "Generation Mode",
+    "subtitle": "Auto-generate ships the result straight to you. Review lets you tweak the captions and image in-loop before finalising.",
+    "optionAuto": "Auto-Generate",
+    "optionReview": "Review Before Final"
   }
 }

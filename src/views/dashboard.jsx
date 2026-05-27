@@ -1,7 +1,8 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import heic2any from 'heic2any';
 import { useTranslation } from 'react-i18next';
-import { Camera, ArrowRight, X, Loader2, UploadCloud, Sun, Focus, Lightbulb, Utensils } from 'lucide-react';
+import { Camera, ArrowRight, X, Loader2, UploadCloud, Sun, Focus, Lightbulb, Utensils, Crosshair } from 'lucide-react';
+import GuidedCaptureModal from '../components/GuidedCaptureModal';
 
 const PRO_TIPS = [
     { id: 1, icon: Sun },
@@ -11,9 +12,10 @@ const PRO_TIPS = [
 ];
 
 export default function DashboardView({ onImageSelect, onImageRemove, mediaState, onNext }) {
-    const { t } = useTranslation(['dashboard', 'common']);
+    const { t } = useTranslation(['dashboard', 'common', 'guidedCapture']);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [showGuidedCapture, setShowGuidedCapture] = useState(false);
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
     const hasImage = mediaState.file !== null;
@@ -201,16 +203,29 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
                         ) : (
                             <>
                                 <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleFileChange} className="hidden" />
-                                <div className="flex flex-col items-center gap-1.5 md:gap-2">
-                                    <button
-                                        onClick={() => cameraInputRef.current.click()}
-                                        disabled={isProcessing}
-                                        className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-[#dc2626] border-4 border-white text-white flex items-center justify-center shadow-lg md:shadow-xl md:hover:scale-105 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Open Camera"
-                                    >
-                                        <Camera size={26} strokeWidth={2} className="md:w-8 md:h-8" />
-                                    </button>
-                                    <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">{t('dashboard:actions.takePhoto')}</span>
+                                <div className="flex items-end gap-6 md:gap-10">
+                                    <div className="flex flex-col items-center gap-1.5 md:gap-2">
+                                        <button
+                                            onClick={() => cameraInputRef.current.click()}
+                                            disabled={isProcessing}
+                                            className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-[#dc2626] border-4 border-white text-white flex items-center justify-center shadow-lg md:shadow-xl md:hover:scale-105 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Open Camera"
+                                        >
+                                            <Camera size={26} strokeWidth={2} className="md:w-8 md:h-8" />
+                                        </button>
+                                        <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">{t('dashboard:actions.takePhoto')}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1.5 md:gap-2">
+                                        <button
+                                            onClick={() => setShowGuidedCapture(true)}
+                                            disabled={isProcessing}
+                                            className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-white border-4 border-[#dc2626] text-[#dc2626] flex items-center justify-center shadow-lg md:shadow-xl md:hover:scale-105 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title={t('guidedCapture:button.label')}
+                                        >
+                                            <Crosshair size={26} strokeWidth={2} className="md:w-8 md:h-8" />
+                                        </button>
+                                        <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">{t('guidedCapture:button.label')}</span>
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -218,6 +233,12 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
 
                 </section>
             </div>
+
+            <GuidedCaptureModal
+                isOpen={showGuidedCapture}
+                onClose={() => setShowGuidedCapture(false)}
+                onCapture={onImageSelect}
+            />
         </div>
     );
 }

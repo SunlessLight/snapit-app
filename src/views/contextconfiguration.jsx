@@ -473,6 +473,42 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                         )}
                     </div>
 
+                    {/* Pro: assistive mode toggle (default ON for new Pro users — see App.jsx). */}
+                    {isPro && (
+                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
+                            <div className="flex items-center justify-between gap-3 mb-3">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <Sparkles className="w-5 h-5 text-[#dc2626] flex-shrink-0" />
+                                    <h2 className="font-serif font-bold text-lg truncate">{t('contextConfig:assistive.heading')}</h2>
+                                </div>
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-[#dc2626] bg-red-50 px-2 py-0.5 rounded-full flex-shrink-0">PRO</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mb-4 leading-relaxed">{t('contextConfig:assistive.subtitle')}</p>
+                            <div className="flex bg-gray-100/80 p-1 rounded-full border border-gray-200 items-center w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('assistiveMode', false)}
+                                    className={`flex-1 px-3 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-200 ${!config.assistiveMode
+                                        ? 'bg-white text-gray-800 shadow-sm border border-gray-200/50'
+                                        : 'text-gray-400 hover:text-gray-600 bg-transparent'
+                                        }`}
+                                >
+                                    {t('contextConfig:assistive.optionAuto')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('assistiveMode', true)}
+                                    className={`flex-1 px-3 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-200 ${config.assistiveMode
+                                        ? 'bg-white text-gray-800 shadow-sm border border-gray-200/50'
+                                        : 'text-gray-400 hover:text-gray-600 bg-transparent'
+                                        }`}
+                                >
+                                    {t('contextConfig:assistive.optionReview')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </div>
 

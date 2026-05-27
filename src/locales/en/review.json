@@ -1,0 +1,30 @@
+{
+  "header": {
+    "title": "Review & Refine",
+    "subtitle": "Tweak the draft, then send it to results"
+  },
+  "bg": {
+    "heading": "Background Image",
+    "previewAlt": "Background preview",
+    "loading": "Regenerating background…",
+    "changePromptLabel": "What to change about the background?",
+    "changePromptPlaceholder": "e.g., Make the lighting warmer and add some blurred plants in the back",
+    "regenerateButton": "Regenerate Background"
+  },
+  "captions": {
+    "heading": "Title, Description & Caption",
+    "subtitle": "Edit any field directly, or tell the AI what to fix below.",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "captionLabel": "Caption",
+    "changePromptLabel": "What to change about the captions?",
+    "changePromptPlaceholder": "e.g., Make the caption shorter and more playful, add a question at the end",
+    "regenerateButton": "Regenerate Captions"
+  },
+  "finaliseButton": "Looks Good — See Final",
+  "errors": {
+    "noImage": "No image available to regenerate from.",
+    "noBgPrompt": "Missing the original background prompt — go back and generate first.",
+    "generic": "Something went wrong. Try again in a moment."
+  }
+}

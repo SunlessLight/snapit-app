@@ -8,10 +8,12 @@ import enMediaEditor from './locales/en/mediaEditor.json';
 import enContextConfig from './locales/en/contextConfig.json';
 import enProcessing from './locales/en/processing.json';
 import enResultsHub from './locales/en/resultsHub.json';
+import enReview from './locales/en/review.json';
 import enWelcome from './locales/en/welcome.json';
 import enLogin from './locales/en/login.json';
 import enHeader from './locales/en/header.json';
 import enTimeline from './locales/en/timeline.json';
+import enGuidedCapture from './locales/en/guidedCapture.json';
 
 import zhCommon from './locales/zh/common.json';
 import zhDashboard from './locales/zh/dashboard.json';
@@ -19,10 +21,12 @@ import zhMediaEditor from './locales/zh/mediaEditor.json';
 import zhContextConfig from './locales/zh/contextConfig.json';
 import zhProcessing from './locales/zh/processing.json';
 import zhResultsHub from './locales/zh/resultsHub.json';
+import zhReview from './locales/zh/review.json';
 import zhWelcome from './locales/zh/welcome.json';
 import zhLogin from './locales/zh/login.json';
 import zhHeader from './locales/zh/header.json';
 import zhTimeline from './locales/zh/timeline.json';
+import zhGuidedCapture from './locales/zh/guidedCapture.json';
 
 import msCommon from './locales/ms/common.json';
 import msDashboard from './locales/ms/dashboard.json';
@@ -30,10 +34,12 @@ import msMediaEditor from './locales/ms/mediaEditor.json';
 import msContextConfig from './locales/ms/contextConfig.json';
 import msProcessing from './locales/ms/processing.json';
 import msResultsHub from './locales/ms/resultsHub.json';
+import msReview from './locales/ms/review.json';
 import msWelcome from './locales/ms/welcome.json';
 import msLogin from './locales/ms/login.json';
 import msHeader from './locales/ms/header.json';
 import msTimeline from './locales/ms/timeline.json';
+import msGuidedCapture from './locales/ms/guidedCapture.json';
 
 const STORAGE_KEY = 'snapit:uiLanguage';
 
@@ -57,10 +63,12 @@ const resources = {
     contextConfig: enContextConfig,
     processing: enProcessing,
     resultsHub: enResultsHub,
+    review: enReview,
     welcome: enWelcome,
     login: enLogin,
     header: enHeader,
     timeline: enTimeline,
+    guidedCapture: enGuidedCapture,
   },
   zh: {
     common: zhCommon,
@@ -69,10 +77,12 @@ const resources = {
     contextConfig: zhContextConfig,
     processing: zhProcessing,
     resultsHub: zhResultsHub,
+    review: zhReview,
     welcome: zhWelcome,
     login: zhLogin,
     header: zhHeader,
     timeline: zhTimeline,
+    guidedCapture: zhGuidedCapture,
   },
   ms: {
     common: msCommon,
@@ -81,10 +91,12 @@ const resources = {
     contextConfig: msContextConfig,
     processing: msProcessing,
     resultsHub: msResultsHub,
+    review: msReview,
     welcome: msWelcome,
     login: msLogin,
     header: msHeader,
     timeline: msTimeline,
+    guidedCapture: msGuidedCapture,
   },
 };
 
@@ -97,7 +109,7 @@ i18n
     fallbackLng: 'en',
     supportedLngs: ['en', 'zh', 'ms'],
     nonExplicitSupportedLngs: true,
-    ns: ['common', 'dashboard', 'mediaEditor', 'contextConfig', 'processing', 'resultsHub', 'welcome', 'login', 'header', 'timeline'],
+    ns: ['common', 'dashboard', 'mediaEditor', 'contextConfig', 'processing', 'resultsHub', 'review', 'welcome', 'login', 'header', 'timeline', 'guidedCapture'],
     defaultNS: 'common',
     interpolation: { escapeValue: false },
     detection: {

@@ -1,0 +1,27 @@
+{
+  "button": {
+    "label": "Guided Capture"
+  },
+  "permission": {
+    "requesting": "Starting camera...",
+    "denied": "Camera access needed",
+    "deniedHint": "Allow camera in your browser settings, or use the Take Photo button instead.",
+    "fallbackButton": "Close"
+  },
+  "warnings": {
+    "tiltLeft": "Tilted {{degrees}}° left",
+    "tiltRight": "Tilted {{degrees}}° right",
+    "tooDark": "Too dark",
+    "tooBright": "Too bright",
+    "blurry": "Hold still — looks blurry"
+  },
+  "hints": {
+    "topDown": "Top-down angle",
+    "angle45": "45° angle",
+    "ready": "Looks great"
+  },
+  "ui": {
+    "shutterAlt": "Take photo",
+    "closeAlt": "Close camera"
+  }
+}

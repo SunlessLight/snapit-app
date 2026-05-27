@@ -40,5 +40,11 @@
     },
     "descriptionLabel": "自定义背景描述",
     "descriptionPlaceholder": "例如:大理石台面,左侧柔和晨光,背景有模糊的绿植"
+  },
+  "assistive": {
+    "heading": "生成模式",
+    "subtitle": "自动生成会直接给出成果。审阅模式让你在确定前继续微调文案和图片。",
+    "optionAuto": "自动生成",
+    "optionReview": "审阅后定稿"
   }
 }

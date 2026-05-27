@@ -40,5 +40,11 @@
     },
     "descriptionLabel": "Huraikan Latar Belakang Anda",
     "descriptionPlaceholder": "cth., Meja marmar, cahaya pagi lembut dari kiri, tumbuhan kabur di belakang"
+  },
+  "assistive": {
+    "heading": "Mod Penjanaan",
+    "subtitle": "Auto-Jana hantar hasil terus kepada anda. Semak biarkan anda ubah kapsyen dan gambar dalam lup sebelum muktamad.",
+    "optionAuto": "Auto-Jana",
+    "optionReview": "Semak Dahulu"
   }
 }
