@@ -8,7 +8,6 @@ import {
   evaluateBrightness,
   evaluateBlur,
   evaluateAngle,
-  TILT_THRESHOLD_DEG,
 } from '../utils/captureHeuristics';
 
 const ANALYSIS_INTERVAL_MS = 200;

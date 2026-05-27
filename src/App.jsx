@@ -364,7 +364,7 @@ export default function App() {
         // Added the missing props so the component can read the form data
         return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onPrev={prevStep} />;
       case 5:
-        return <ReviewScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onNext={nextStep} onPrev={prevStep} />;
+        return <ReviewScreen mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onNext={nextStep} onPrev={prevStep} />;
       case 6:
         return <ResultsHubView userName={userName} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
       default:
