@@ -5,6 +5,7 @@ import WelcomeScreen from './views/welcomescreen'
 import DashboardView from './views/dashboard';
 import MediaEditorView from './views/mediaeditor';
 import ContextConfigurationView from './views/contextconfiguration';
+import MaskPreviewScreen from './views/maskpreviewscreen';
 import ProcessingScreen from './views/processingscreen';
 import ReviewScreen from './views/reviewscreen';
 import ResultsHubView from './views/resultshub';
@@ -75,6 +76,25 @@ const ALLOWED_LENGTHS = new Set(['short', 'medium', 'long']);
 const MEDIA_STATE_STORAGE_KEY = 'snapit:mediaState';
 const MARKETING_CONFIG_STORAGE_KEY = 'snapit:marketingConfig';
 
+// Photoroom uncertainty thresholds. Score is read off the /v2/edit response
+// header (0=confident, 1=unsure, -1=humans-in-frame). 0.5 is a starting point —
+// tune after observing 20-30 real generations. Both constants named so the
+// threshold lives in one place.
+const LOW_CONFIDENCE_THRESHOLD = 0.5;
+const HUMAN_DETECTED_SCORE = -1;
+
+// Phase 6.7.5 — feature-flagged mask-preview step. When enabled, a new
+// checkpoint (step 4) sits between Context Config and Processing for bg-swap
+// flows, so users can bail on a bad cutout before the expensive /v2/edit call.
+// All step numbers are looked up via STEP rather than hardcoded so the
+// renumbering happens in one place.
+const MASK_PREVIEW_ENABLED = import.meta.env.VITE_ENABLE_MASK_PREVIEW === 'true';
+
+const STEP = MASK_PREVIEW_ENABLED
+  ? { DASHBOARD: 1, EDITOR: 2, CONFIG: 3, MASK_PREVIEW: 4, PROCESSING: 5, REVIEW: 6, RESULTS: 7 }
+  : { DASHBOARD: 1, EDITOR: 2, CONFIG: 3, PROCESSING: 4, REVIEW: 5, RESULTS: 6 };
+const MAX_STEP = MASK_PREVIEW_ENABLED ? 7 : 6;
+
 // Strip non-serializable fields (File objects, blob: URLs) before persisting.
 // compositeCropRect is a plain object and persists fine; isEnhanced is dropped because
 // the Blob it points at can't survive a reload — restoring isEnhanced=true without the
@@ -106,6 +126,18 @@ const DEFAULT_AI_OUTPUT = {
   description: "Crispy on the outside, juicy on the inside! Our signature Nasi Lemak comes with freshly fried Ayam Berempah, fragrant coconut rice, and our secret recipe sambal that hits all the right notes.",
   caption: "Craving something pedas and sedap? 🤤 Come try our crowd-favorite Nasi Lemak today!\n\n📍 Find us at Food Court Subang\n💵 Only RM 12.00!\n\n#NasiLemak #MalaysianFood #SedapGiler",
   generatedImageBase64: null, // Leave null so our fallback triggers
+  // Photoroom uncertainty score from /v2/edit response header (0=confident,
+  // 1=unsure, -1=humans-in-frame). Drives the 6.7.2 force-Review gate. null
+  // means "no signal" (header omitted or bg-swap skipped) — gate treats null
+  // as confident and doesn't force-route.
+  bgUncertaintyScore: null,
+  // Phase 6.7.4 — Photoroom seed used for the most recent bg-swap. Drives
+  // ReviewScreen's "Tweak this one" mode (replay this exact seed). null
+  // before the first bg-swap; backend always echoes the seed it picked.
+  bgSeed: null,
+  // Reason transient: set when the 6.7.2 gate routes a Standard user into
+  // Review against their flow. Drives the ReviewScreen chip + Retake button.
+  forceReviewReason: null,
   // Dummy AI-enhanced image (e.g., a beautifully lit version)
   imageUrl: foodImage
 };
@@ -152,24 +184,69 @@ export default function App() {
     };
   });
   const [aiOutput, setAiOutput] = useState(DEFAULT_AI_OUTPUT);
+  // Transient one-shot nudge surfaced on Dashboard. Set when the 6.7.2 gate
+  // bounces a user back to Upload (e.g. humans-in-frame). null = no nudge.
+  // Cleared on dismiss, on new image select, and on Start Over.
+  const [processingNudge, setProcessingNudge] = useState(null);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerWrapperRef = useRef(null);
   const lastScrollY = useRef(0);
-  const isProcessingScreen = currentStep === 4;
+  const isProcessingScreen = currentStep === STEP.PROCESSING;
   const showHeader = isAuthenticated && currentStep > 0;
 
-  const nextStep = useCallback(() => setCurrentStep((prev) => Math.min(prev + 1, 6)), []);
-  const prevStep = useCallback(() => setCurrentStep((prev) => Math.max(prev - 1, 1)), []);
+  const nextStep = useCallback(() => setCurrentStep((prev) => Math.min(prev + 1, MAX_STEP)), []);
+  const prevStep = useCallback(() => setCurrentStep((prev) => Math.max(prev - 1, STEP.DASHBOARD)), []);
 
   // ProcessingScreen calls this when the LLM job is done. Pro+assistive lands on
   // the Review screen (step 5); everyone else skips it and goes straight to
   // Results Hub (step 6). Routing decision lives here, not in ProcessingScreen,
   // so the processing screen stays unaware of the assistive concept.
-  const handleProcessingComplete = useCallback(() => {
+  //
+  // Phase 6.7.2 — uncertainty gate. We receive the freshly-arrived `data`
+  // rather than reading `aiOutput` from state because setAiOutput hasn't
+  // committed by the time onComplete fires synchronously inside the same
+  // tick. Reading state here would always see the previous job's score.
+  //   score === -1   → humans-in-frame, bounce to Upload with a re-shoot nudge
+  //   score >= 0.5   → low-confidence cutout, force-route to Review with chip
+  //   otherwise      → normal assistive/autonomous branch
+  const handleProcessingComplete = useCallback((data) => {
+    const score = data?.bgUncertaintyScore;
+
+    if (score === HUMAN_DETECTED_SCORE) {
+      setProcessingNudge('human_detected');
+      setAiOutput((prev) => ({ ...prev, forceReviewReason: null }));
+      setCurrentStep(STEP.DASHBOARD);
+      return;
+    }
+
+    if (typeof score === 'number' && score >= LOW_CONFIDENCE_THRESHOLD) {
+      setAiOutput((prev) => ({ ...prev, forceReviewReason: 'low_confidence_cutout' }));
+      setCurrentStep(STEP.REVIEW);
+      return;
+    }
+
     const goReview = !!marketingConfig.isContextPro && !!marketingConfig.assistiveMode;
-    setCurrentStep(goReview ? 5 : 6);
+    setAiOutput((prev) => ({ ...prev, forceReviewReason: null }));
+    setCurrentStep(goReview ? STEP.REVIEW : STEP.RESULTS);
   }, [marketingConfig.isContextPro, marketingConfig.assistiveMode]);
+
+  // Dashboard banner dismiss for the human-detected nudge.
+  const handleDismissProcessingNudge = useCallback(() => setProcessingNudge(null), []);
+
+  // ReviewScreen Retake (only rendered when forceReviewReason ===
+  // 'low_confidence_cutout'). Clears aiOutput + bounces back to Upload.
+  const handleRetakeFromReview = useCallback(() => {
+    setAiOutput(DEFAULT_AI_OUTPUT);
+    setCurrentStep(STEP.DASHBOARD);
+  }, []);
+
+  // Phase 6.7.5 — MaskPreview "Retake" (cheap, pre-generation bail-out).
+  // Same UX as the forced-Review Retake but no aiOutput to clear since we
+  // haven't generated anything yet.
+  const handleRetakeFromMaskPreview = useCallback(() => {
+    setCurrentStep(STEP.DASHBOARD);
+  }, []);
 
   // Navigate to LoginScreen from WelcomeScreen
   const handleShowLogin = useCallback(() => {
@@ -183,6 +260,8 @@ export default function App() {
   }, []);
 
   const handleImageSelect = useCallback((file, previewUrl) => {
+    // New upload supersedes any prior re-shoot nudge.
+    setProcessingNudge(null);
     setMediaState(prev => {
       if (prev.processedUrl) URL.revokeObjectURL(prev.processedUrl);
       if (prev.originalUrl && prev.originalUrl !== prev.url) URL.revokeObjectURL(prev.originalUrl);
@@ -225,7 +304,8 @@ export default function App() {
     });
     setMarketingConfig(DEFAULT_MARKETING_CONFIG);
     setAiOutput(DEFAULT_AI_OUTPUT);
-    setCurrentStep(1);
+    setProcessingNudge(null);
+    setCurrentStep(STEP.DASHBOARD);
     try {
       localStorage.removeItem(MEDIA_STATE_STORAGE_KEY);
       localStorage.removeItem(MARKETING_CONFIG_STORAGE_KEY);
@@ -239,7 +319,7 @@ export default function App() {
       setUser(session?.user ?? null);
       setUserName(session?.user?.user_metadata?.username || '');
       setAuthLoading(false);
-      if (session) setCurrentStep(1);
+      if (session) setCurrentStep(STEP.DASHBOARD);
     });
 
     const { data: { subscription } } = authService.onAuthStateChange((_event, session) => {
@@ -256,7 +336,7 @@ export default function App() {
     setUserName(username || '');
     setShowLoginScreen(false);
     setAuthMode('login');
-    setCurrentStep(1);
+    setCurrentStep(STEP.DASHBOARD);
   }, []);
 
   // Handle logout
@@ -266,6 +346,20 @@ export default function App() {
     setAuthMode('login');
     setCurrentStep(0);
   }, []);
+
+  // Phase 6.7.5 — MaskPreview "Looks right" advances to Processing. Lifted
+  // here (not nextStep) so the call site is explicit about what it's doing
+  // and we don't accidentally skip Processing if MAX_STEP ever changes.
+  const handleMaskPreviewAccept = useCallback(() => {
+    setCurrentStep(STEP.PROCESSING);
+  }, []);
+
+  // The MaskPreview step is only reachable when the flag is on AND the user
+  // asked for a background swap. Skip it for the bg-off path.
+  const shouldShowMaskPreview = MASK_PREVIEW_ENABLED && !!marketingConfig.generateBackground;
+  const handleConfigNext = useCallback(() => {
+    setCurrentStep(shouldShowMaskPreview ? STEP.MASK_PREVIEW : STEP.PROCESSING);
+  }, [shouldShowMaskPreview]);
 
   // ========== PERSISTENCE ==========
   useEffect(() => {
@@ -348,24 +442,31 @@ export default function App() {
       return <WelcomeScreen onLogin={handleShowLogin} onSignUp={handleShowSignUp} />;
     }
 
-    // User is authenticated - show workflow
+    // User is authenticated - show workflow. Step values come from STEP so the
+    // 6.7.5 mask-preview renumbering happens in one place.
     switch (currentStep) {
       case 0:
-        // This shouldn't happen (authenticated users skip to step 1), but keep as fallback
+        // This shouldn't happen (authenticated users skip to Dashboard), but keep as fallback
         return <WelcomeScreen onLogin={handleShowLogin} onSignUp={handleShowSignUp} />;
-      case 1:
-        // We can pass nextStep directly since we removed the array index wrapper
-        return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
-      case 2:
+      case STEP.DASHBOARD:
+        return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} processingNudge={processingNudge} onDismissNudge={handleDismissProcessingNudge} />;
+      case STEP.EDITOR:
         return <MediaEditorView userName={userName} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
-      case 3:
-        return <ContextConfigurationView userName={userName} mediaState={mediaState} setMediaState={setMediaState} config={marketingConfig} setConfig={setMarketingConfig} onNext={nextStep} onPrev={prevStep} />;
-      case 4:
-        // Added the missing props so the component can read the form data
+      case STEP.CONFIG:
+        // ContextConfig advances either to MaskPreview (when flag on + bg-swap on)
+        // or directly to Processing. handleConfigNext encapsulates that choice.
+        return <ContextConfigurationView userName={userName} mediaState={mediaState} setMediaState={setMediaState} config={marketingConfig} setConfig={setMarketingConfig} onNext={handleConfigNext} onPrev={prevStep} />;
+      case STEP.MASK_PREVIEW:
+        // Only reachable when MASK_PREVIEW_ENABLED. Defensive fallback to
+        // Processing in case state lands here under an unexpected condition.
+        return MASK_PREVIEW_ENABLED
+          ? <MaskPreviewScreen mediaState={mediaState} onLooksRight={handleMaskPreviewAccept} onRetake={handleRetakeFromMaskPreview} onPrev={prevStep} />
+          : <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onPrev={prevStep} />;
+      case STEP.PROCESSING:
         return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onPrev={prevStep} />;
-      case 5:
-        return <ReviewScreen mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onNext={nextStep} onPrev={prevStep} />;
-      case 6:
+      case STEP.REVIEW:
+        return <ReviewScreen mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onNext={nextStep} onPrev={prevStep} onRetake={handleRetakeFromReview} />;
+      case STEP.RESULTS:
         return <ResultsHubView userName={userName} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
       default:
         return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
@@ -397,7 +498,12 @@ export default function App() {
         {showHeader && (
           <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
             <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
-            <DynamicTimeline currentStep={currentStep} showReview={!!marketingConfig.isContextPro && !!marketingConfig.assistiveMode} />
+            <DynamicTimeline
+              currentStep={currentStep}
+              showReview={!!marketingConfig.isContextPro && !!marketingConfig.assistiveMode}
+              showMaskPreviewDot={shouldShowMaskPreview}
+              useShiftedNumbering={MASK_PREVIEW_ENABLED}
+            />
           </div>
         )}
       </div>

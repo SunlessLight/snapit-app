@@ -14,6 +14,7 @@ import enLogin from './locales/en/login.json';
 import enHeader from './locales/en/header.json';
 import enTimeline from './locales/en/timeline.json';
 import enGuidedCapture from './locales/en/guidedCapture.json';
+import enMaskPreview from './locales/en/maskPreview.json';
 
 import zhCommon from './locales/zh/common.json';
 import zhDashboard from './locales/zh/dashboard.json';
@@ -27,6 +28,7 @@ import zhLogin from './locales/zh/login.json';
 import zhHeader from './locales/zh/header.json';
 import zhTimeline from './locales/zh/timeline.json';
 import zhGuidedCapture from './locales/zh/guidedCapture.json';
+import zhMaskPreview from './locales/zh/maskPreview.json';
 
 import msCommon from './locales/ms/common.json';
 import msDashboard from './locales/ms/dashboard.json';
@@ -40,6 +42,7 @@ import msLogin from './locales/ms/login.json';
 import msHeader from './locales/ms/header.json';
 import msTimeline from './locales/ms/timeline.json';
 import msGuidedCapture from './locales/ms/guidedCapture.json';
+import msMaskPreview from './locales/ms/maskPreview.json';
 
 const STORAGE_KEY = 'snapit:uiLanguage';
 
@@ -69,6 +72,7 @@ const resources = {
     header: enHeader,
     timeline: enTimeline,
     guidedCapture: enGuidedCapture,
+    maskPreview: enMaskPreview,
   },
   zh: {
     common: zhCommon,
@@ -83,6 +87,7 @@ const resources = {
     header: zhHeader,
     timeline: zhTimeline,
     guidedCapture: zhGuidedCapture,
+    maskPreview: zhMaskPreview,
   },
   ms: {
     common: msCommon,
@@ -97,6 +102,7 @@ const resources = {
     header: msHeader,
     timeline: msTimeline,
     guidedCapture: msGuidedCapture,
+    maskPreview: msMaskPreview,
   },
 };
 
@@ -109,7 +115,7 @@ i18n
     fallbackLng: 'en',
     supportedLngs: ['en', 'zh', 'ms'],
     nonExplicitSupportedLngs: true,
-    ns: ['common', 'dashboard', 'mediaEditor', 'contextConfig', 'processing', 'resultsHub', 'review', 'welcome', 'login', 'header', 'timeline', 'guidedCapture'],
+    ns: ['common', 'dashboard', 'mediaEditor', 'contextConfig', 'processing', 'resultsHub', 'review', 'welcome', 'login', 'header', 'timeline', 'guidedCapture', 'maskPreview'],
     defaultNS: 'common',
     interpolation: { escapeValue: false },
     detection: {

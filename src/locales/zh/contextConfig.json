@@ -39,7 +39,8 @@
       "premium": { "label": "高端", "desc": "干净优雅" }
     },
     "descriptionLabel": "自定义背景描述",
-    "descriptionPlaceholder": "例如:大理石台面,左侧柔和晨光,背景有模糊的绿植"
+    "descriptionPlaceholder": "例如:午后暖光,旧木桌面,柔和的阴影",
+    "descriptionHint": "描述氛围和光线就好 — 不用列举杯子、盘子、餐具这些道具。"
   },
   "assistive": {
     "heading": "生成模式",

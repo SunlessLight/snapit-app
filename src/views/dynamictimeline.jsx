@@ -2,12 +2,52 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export default function DynamicTimeline({ currentStep, showReview = false }) {
+export default function DynamicTimeline({
+    currentStep,
+    showReview = false,
+    showMaskPreviewDot = false,
+    useShiftedNumbering = false,
+}) {
     const { t } = useTranslation('timeline');
-    // Assistive Pro users get the Review step (5) between AI Magic (4) and Result (6).
-    // Everyone else sees a 5-dot timeline and jumps straight from AI Magic to Result.
-    const stepNums = showReview ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 6];
-    const steps = stepNums.map(num => ({ num, label: t(`steps.${num}`) }));
+
+    // Step numbers shift when Phase 6.7.5's mask-preview flag is on at build
+    // time. With shifted numbering: 1=Upload, 2=Edit, 3=Vibe, 4=MaskPreview,
+    // 5=AI Magic, [6=Review], 7=Result. Without: 1=Upload, …, 4=AI Magic,
+    // [5=Review], 6=Result.
+    //
+    // `showMaskPreviewDot` is a separate concept — it controls whether dot 4
+    // appears in the timeline at all. When the user opts bg-off, the mask
+    // preview step is skipped entirely (same UX pattern as how the !showReview
+    // case removes dot 5/6 from the strip), but `useShiftedNumbering` stays
+    // true so currentStep values still map to the right labels.
+    const labelForStep = (num) => {
+        if (useShiftedNumbering) {
+            if (num === 1) return t('steps.1');
+            if (num === 2) return t('steps.2');
+            if (num === 3) return t('steps.3');
+            if (num === 4) return t('steps.7'); // MaskPreview label
+            if (num === 5) return t('steps.4'); // AI Magic shifts to slot 5
+            if (num === 6) return t('steps.5'); // Review shifts to slot 6
+            if (num === 7) return t('steps.6'); // Result shifts to slot 7
+            return '';
+        }
+        return t(`steps.${num}`);
+    };
+
+    let stepNums;
+    if (useShiftedNumbering) {
+        // Resolved-step numbers: which dots actually appear, given the user's
+        // current Review/bg choices.
+        const base = [1, 2, 3];
+        if (showMaskPreviewDot) base.push(4);
+        base.push(5); // AI Magic always appears
+        if (showReview) base.push(6);
+        base.push(7); // Result always appears
+        stepNums = base;
+    } else {
+        stepNums = showReview ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 6];
+    }
+    const steps = stepNums.map(num => ({ num, label: labelForStep(num) }));
 
     return (
         // Sticky wrapper that floats at the top

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, RefreshCw, Loader2, Image as ImageIcon, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Image as ImageIcon, Sparkles, MessageSquare, AlertCircle, AlertTriangle, Camera, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -26,7 +26,7 @@ const AutosizeTextarea = ({ value, onChange, rows = 3, disabled = false, placeho
     );
 };
 
-export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, setAiOutput, onNext, onPrev }) {
+export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, setAiOutput, onNext, onPrev, onRetake }) {
     const { t } = useTranslation(['review', 'common']);
 
     const [captionChangePrompt, setCaptionChangePrompt] = useState('');
@@ -35,6 +35,21 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
     const [isRegeneratingBg, setIsRegeneratingBg] = useState(false);
     const [captionError, setCaptionError] = useState(null);
     const [bgError, setBgError] = useState(null);
+    // Phase 6.7.4 — 'vary' picks a fresh random seed (new composition);
+    // 'fix' replays aiOutput.bgSeed so the prompt-delta is the only thing
+    // that changes. Default vary because users usually click regen when
+    // they didn't like the composition.
+    const [seedMode, setSeedMode] = useState('vary');
+    // Chip is dismissible but the underlying reason stays on aiOutput so a
+    // back-nav-then-resubmit doesn't keep re-rendering it for the same job.
+    // Local state covers the dismiss action within this view's lifetime.
+    const [chipDismissed, setChipDismissed] = useState(false);
+
+    // Phase 6.7.2 — only render the chip + Retake when the gate routed us here
+    // because of low-confidence. Normal Pro-assistive Review never sees this
+    // (the chip would be noise for users who opted into Review).
+    const isForcedReview = aiOutput?.forceReviewReason === 'low_confidence_cutout';
+    const showChip = isForcedReview && !chipDismissed;
 
     const showBgPanel = !!marketingConfig.generateBackground;
     const sourceImage = mediaState.processedFile || mediaState.file || mediaState.originalFile;
@@ -109,6 +124,13 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
             formData.append('image', sourceImage, 'snapit-source.png');
             formData.append('originalBackgroundPrompt', aiOutput.backgroundPrompt);
             formData.append('changePrompt', bgChangePrompt);
+            formData.append('seedMode', seedMode);
+            // Fix-mode only matters if we actually have a previous seed to
+            // replay. Backend gracefully falls back to vary when lastSeed is
+            // missing, but we surface intent explicitly for log clarity.
+            if (seedMode === 'fix' && aiOutput?.bgSeed != null) {
+                formData.append('lastSeed', String(aiOutput.bgSeed));
+            }
 
             const res = await fetch(`${API_BASE_URL}/api/regenerate/background`, {
                 method: 'POST',
@@ -122,6 +144,7 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
                 ...prev,
                 generatedImageBase64: json.generatedImageBase64,
                 backgroundPrompt: json.backgroundPrompt || prev.backgroundPrompt,
+                bgSeed: json.bgSeed ?? prev.bgSeed,
             }));
             setBgChangePrompt('');
         } catch (err) {
@@ -153,6 +176,30 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
                 </div>
             </header>
 
+            {showChip && (
+                <div className="px-4 md:px-6 max-w-xl mx-auto w-full">
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                        <AlertTriangle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-amber-900">
+                                {t('review:lowConfidenceCutout.title')}
+                            </p>
+                            <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                                {t('review:lowConfidenceCutout.body')}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setChipDismissed(true)}
+                            className="p-1 text-amber-700 hover:text-amber-900 active:scale-95 transition-colors flex-shrink-0"
+                            aria-label={t('review:lowConfidenceCutout.dismiss')}
+                        >
+                            <X size={16} strokeWidth={2.5} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="px-4 md:px-6 pb-8">
                 <div className="max-w-xl mx-auto space-y-5 pt-2">
 
@@ -177,6 +224,44 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
                                         <span className="text-xs text-gray-600 font-medium">{t('review:bg.loading')}</span>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Phase 6.7.4 — seed-mode toggle. Sits above
+                                the delta-prompt so the mode choice frames
+                                what the prompt is going to do. */}
+                            <div className="mb-3">
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                                    {t('review:bgRegen.modeLabel')}
+                                </label>
+                                <div className="flex bg-gray-100/80 p-1 rounded-full border border-gray-200 items-center w-full">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSeedMode('vary')}
+                                        disabled={isRegeneratingBg}
+                                        className={`flex-1 px-3 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-200 disabled:opacity-50 ${seedMode === 'vary'
+                                            ? 'bg-white text-gray-800 shadow-sm border border-gray-200/50'
+                                            : 'text-gray-400 hover:text-gray-600 bg-transparent'
+                                            }`}
+                                    >
+                                        {t('review:bgRegen.varyLabel')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSeedMode('fix')}
+                                        disabled={isRegeneratingBg || aiOutput?.bgSeed == null}
+                                        className={`flex-1 px-3 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-200 disabled:opacity-50 ${seedMode === 'fix'
+                                            ? 'bg-white text-gray-800 shadow-sm border border-gray-200/50'
+                                            : 'text-gray-400 hover:text-gray-600 bg-transparent'
+                                            }`}
+                                    >
+                                        {t('review:bgRegen.fixLabel')}
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1.5 ml-1 leading-relaxed">
+                                    {seedMode === 'fix'
+                                        ? t('review:bgRegen.fixHint')
+                                        : t('review:bgRegen.varyHint')}
+                                </p>
                             </div>
 
                             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
@@ -298,7 +383,17 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
                 </div>
             </div>
 
-            <div className="px-4 md:px-6 pt-2 pb-8 max-w-xl mx-auto w-full">
+            <div className="px-4 md:px-6 pt-2 pb-8 max-w-xl mx-auto w-full space-y-3">
+                {isForcedReview && onRetake && (
+                    <button
+                        onClick={onRetake}
+                        disabled={anyLoading}
+                        className="w-full py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all bg-white border border-gray-200 text-gray-800 hover:border-[#dc2626] hover:text-[#dc2626] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Camera className="w-4 h-4" />
+                        {t('review:lowConfidenceCutout.retake')}
+                    </button>
+                )}
                 <button
                     onClick={onNext}
                     disabled={anyLoading}

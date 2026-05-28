@@ -11,6 +11,13 @@
     "changePromptPlaceholder": "例如:光线再暖一些,后面加些模糊的绿植",
     "regenerateButton": "重新生成背景"
   },
+  "bgRegen": {
+    "modeLabel": "重新生成方式",
+    "varyLabel": "换个版本",
+    "fixLabel": "微调这版",
+    "varyHint": "重新生成一个新构图。如果现在的背景不对味就用这个。",
+    "fixHint": "保留当前构图,只按指令做小幅调整。"
+  },
   "captions": {
     "heading": "标题、描述与文案",
     "subtitle": "可直接修改任意字段,或在下方告诉 AI 要怎么改。",
@@ -22,6 +29,12 @@
     "regenerateButton": "重新生成文案"
   },
   "finaliseButton": "看起来不错 — 查看成果",
+  "lowConfidenceCutout": {
+    "title": "建议先确认一下",
+    "body": "这次抠图不太有把握 — 建议先在这里看看效果。",
+    "dismiss": "知道了",
+    "retake": "重新拍照"
+  },
   "errors": {
     "noImage": "没有可重新生成的图片。",
     "noBgPrompt": "缺少原本的背景提示词 — 请返回先生成一次。",

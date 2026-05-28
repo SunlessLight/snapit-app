@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import heic2any from 'heic2any';
 import { useTranslation } from 'react-i18next';
-import { Camera, ArrowRight, X, Loader2, UploadCloud, Sun, Focus, Lightbulb, Utensils, Crosshair } from 'lucide-react';
+import { Camera, ArrowRight, X, Loader2, UploadCloud, Sun, Focus, Lightbulb, Utensils, Crosshair, Users } from 'lucide-react';
 import GuidedCaptureModal from '../components/GuidedCaptureModal';
 
 const PRO_TIPS = [
@@ -11,8 +11,8 @@ const PRO_TIPS = [
     { id: 4, icon: Utensils },
 ];
 
-export default function DashboardView({ onImageSelect, onImageRemove, mediaState, onNext }) {
-    const { t } = useTranslation(['dashboard', 'common', 'guidedCapture']);
+export default function DashboardView({ onImageSelect, onImageRemove, mediaState, onNext, processingNudge, onDismissNudge }) {
+    const { t } = useTranslation(['dashboard', 'common', 'guidedCapture', 'processing']);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [showGuidedCapture, setShowGuidedCapture] = useState(false);
@@ -113,6 +113,31 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
                         <h2 className="font-serif text-xl md:text-3xl font-extrabold mb-1 md:mb-3">{t('dashboard:hero.title')}</h2>
                         <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">{t('dashboard:hero.subtitle')}</p>
                     </div>
+
+                    {/* Phase 6.7.2 — re-shoot nudge banner. Surfaces when the
+                        uncertainty gate detected humans in frame (-1 score)
+                        and bounced the user back here. Dismissible. */}
+                    {processingNudge === 'human_detected' && (
+                        <div className="w-[85%] sm:w-full max-w-2xl mx-auto mb-3 md:mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 animate-fade-in">
+                            <Users size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-amber-900">
+                                    {t('processing:humanDetected.title')}
+                                </p>
+                                <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                                    {t('processing:humanDetected.body')}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={onDismissNudge}
+                                className="p-1 text-amber-700 hover:text-amber-900 active:scale-95 transition-colors flex-shrink-0"
+                                aria-label={t('processing:humanDetected.dismiss')}
+                            >
+                                <X size={16} strokeWidth={2.5} />
+                            </button>
+                        </div>
+                    )}
 
                     {/* THE SHOCK ABSORBER: Drop Zone Box */}
                     {/* FIX 2: flex-1 combined with a tiny min-h-[130px] allows it to stretch and shrink based on the phone screen size */}

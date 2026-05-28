@@ -39,7 +39,8 @@
       "premium": { "label": "Premium", "desc": "Bersih & eksklusif" }
     },
     "descriptionLabel": "Huraikan Latar Belakang Anda",
-    "descriptionPlaceholder": "cth., Meja marmar, cahaya pagi lembut dari kiri, tumbuhan kabur di belakang"
+    "descriptionPlaceholder": "cth., cahaya petang yang hangat, permukaan kayu lama, bayang-bayang lembut",
+    "descriptionHint": "Huraikan mood dan pencahayaan — elak senaraikan props seperti cawan, pinggan, atau peralatan."
   },
   "assistive": {
     "heading": "Mod Penjanaan",

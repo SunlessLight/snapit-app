@@ -11,6 +11,13 @@
     "changePromptPlaceholder": "e.g., Make the lighting warmer and add some blurred plants in the back",
     "regenerateButton": "Regenerate Background"
   },
+  "bgRegen": {
+    "modeLabel": "Regeneration mode",
+    "varyLabel": "New variation",
+    "fixLabel": "Tweak this one",
+    "varyHint": "Picks a fresh composition. Best if the current background isn't quite right.",
+    "fixHint": "Keeps the current composition. Best for small prompt-driven tweaks."
+  },
   "captions": {
     "heading": "Title, Description & Caption",
     "subtitle": "Edit any field directly, or tell the AI what to fix below.",
@@ -22,6 +29,12 @@
     "regenerateButton": "Regenerate Captions"
   },
   "finaliseButton": "Looks Good — See Final",
+  "lowConfidenceCutout": {
+    "title": "Quick check recommended",
+    "body": "We weren't 100% confident about this cutout — a quick review here is recommended.",
+    "dismiss": "Dismiss",
+    "retake": "Retake Photo"
+  },
   "errors": {
     "noImage": "No image available to regenerate from.",
     "noBgPrompt": "Missing the original background prompt — go back and generate first.",

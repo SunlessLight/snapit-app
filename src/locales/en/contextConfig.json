@@ -39,7 +39,8 @@
       "premium": { "label": "Premium", "desc": "Clean & elegant" }
     },
     "descriptionLabel": "Describe Your Background",
-    "descriptionPlaceholder": "e.g., Marble countertop, soft morning light from the left, blurred plants in the background"
+    "descriptionPlaceholder": "e.g., warm afternoon light, weathered wood surface, soft shadows",
+    "descriptionHint": "Describe the mood and lighting — avoid listing props like cups, plates, or utensils."
   },
   "assistive": {
     "heading": "Generation Mode",

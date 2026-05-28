@@ -4,6 +4,22 @@ import imageCompression from 'browser-image-compression'
 import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../components/SegmentedControl';
 
+// Phase 6.7.3 — scene thumbnails for the 2×2 vibe selector. import.meta.glob
+// with eager:true bundles whichever files exist at build time; missing files
+// simply yield `undefined` in the lookup and we fall back to the gradient
+// rendering. Keeps the wiring shippable before Owner adds the JPEGs.
+const SCENE_THUMB_MODULES = import.meta.glob('../assets/scenes/*.jpg', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+});
+const SCENE_THUMBS = Object.fromEntries(
+    Object.entries(SCENE_THUMB_MODULES).map(([p, url]) => {
+        const name = p.split('/').pop().replace(/\.jpg$/, '');
+        return [name, url];
+    })
+);
+
 // Apply a 3x3 convolution to ImageData in-place (used for sharpness when baking,
 // because canvas ctx.filter = 'url(#...)' is not reliable across browsers).
 const applyConvolution3x3 = (imageData, kernel) => {
@@ -416,29 +432,43 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                         <div className={`grid grid-cols-2 gap-3 transition-opacity duration-300 ${(!config.generateBackground || isPro) ? 'opacity-40 pointer-events-none grayscale-[0.5]' : 'opacity-100'} `}>
                             {backgroundOptions.map((bg) => {
                                 const isSelected = config.backgroundVibe === bg.id;
+                                const thumbUrl = SCENE_THUMBS[bg.id];
                                 return (
                                     <button
                                         key={bg.id}
                                         type="button"
                                         onClick={() => handleUpdate('backgroundVibe', bg.id)}
-                                        className={`relative overflow-hidden text-left p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col h-28 outline-none
+                                        className={`relative overflow-hidden text-left rounded-2xl border-2 transition-all duration-200 flex flex-col aspect-square outline-none
                                         ${isSelected
                                                 ? 'border-[#dc2626] shadow-md scale-[0.98]'
                                                 : 'border-transparent shadow-sm hover:shadow-md hover:scale-[1.02]'
                                             }
                                     `}
                                     >
-                                        <div className={`absolute inset-0 bg-gradient-to-br ${bg.gradient} opacity-90`} />
-                                        <div className="relative z-10 flex-1">
-                                            <span className={`block font-serif font-bold text-sm md:text-base leading-tight ${bg.textColor}`}>
+                                        {/* Thumbnail when present, gradient fallback when not.
+                                            Both paths render the label overlay so the tile is
+                                            usable even before Owner-action assets land. */}
+                                        {thumbUrl ? (
+                                            <img
+                                                src={thumbUrl}
+                                                alt=""
+                                                className="absolute inset-0 w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className={`absolute inset-0 bg-gradient-to-br ${bg.gradient}`} />
+                                        )}
+                                        {/* Semi-transparent black bar at the bottom carries
+                                            the label — reads cleanly against any photo. */}
+                                        <div className="absolute inset-x-0 bottom-0 bg-black/55 backdrop-blur-[2px] px-3 py-2 z-10">
+                                            <span className="block font-serif font-bold text-sm md:text-base text-white leading-tight">
                                                 {bg.label}
                                             </span>
-                                            <span className={`block text-[10px] md:text-xs mt-1 opacity-80 ${bg.textColor}`}>
+                                            <span className="block text-[10px] md:text-xs text-white/80 mt-0.5 leading-tight">
                                                 {bg.desc}
                                             </span>
                                         </div>
                                         {isSelected && (
-                                            <div className="relative z-10 self-end mt-auto">
+                                            <div className="absolute top-2 right-2 z-10">
                                                 <div className="bg-white rounded-full p-0.5 shadow-sm">
                                                     <CheckCircle2 className="w-4 h-4 text-[#dc2626]" />
                                                 </div>
@@ -466,6 +496,14 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                                     onChange={(e) => handleUpdate('backgroundDescription', e.target.value)}
                                     className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium resize-none"
                                 />
+                                {/* Thread 2 #1 — soft steer toward atmospheric
+                                    description. No validator, no backend defang;
+                                    just nudges the median Pro user away from
+                                    listing props (cups/plates) that the
+                                    Photoroom background generator can't render. */}
+                                <p className="mt-1.5 ml-1 text-xs text-gray-500 leading-relaxed">
+                                    {t('contextConfig:background.descriptionHint')}
+                                </p>
                                 <div className="mt-1 text-right text-[10px] text-gray-400">
                                     {(config.backgroundDescription || "").length} / 300
                                 </div>

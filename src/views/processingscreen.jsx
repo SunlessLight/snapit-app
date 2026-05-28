@@ -118,7 +118,11 @@ export default function ProcessingScreen({
                         if (job.status === 'completed') {
                             clearInterval(pollTimer);
                             setAiOutput(job.data);
-                            onComplete();
+                            // Pass job.data directly — App's gate needs the
+                            // fresh bgUncertaintyScore now, not after the
+                            // setAiOutput commit (which is still pending in
+                            // this synchronous tick).
+                            onComplete(job.data);
                         } else if (job.status === 'failed') {
                             clearInterval(pollTimer);
                             throw new Error(job.error || "AI Generation failed.");

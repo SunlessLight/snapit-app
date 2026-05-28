@@ -1,0 +1,15 @@
+{
+  "header": {
+    "title": "Periksa Potongan",
+    "subtitle": "Pastikan hidangan dipotong dengan kemas sebelum kami tambah latar belakang"
+  },
+  "description": "Kami sudah asingkan hidangan dari gambar asal dan letakkan pada latar belakang lutsinar. Jika ada bahagian penting yang terpotong atau ada benda lain tersilap masuk, ambil semula gambar dengan lebih bersih.",
+  "previewAlt": "Pratonton potongan hidangan",
+  "loading": "Mengasingkan hidangan…",
+  "looksRight": "Nampak Bagus — Teruskan",
+  "retake": "Ambil Gambar Semula",
+  "errors": {
+    "noImage": "Tiada gambar untuk dipratonton.",
+    "generic": "Tidak dapat menjana pratonton. Cuba lagi sebentar."
+  }
+}
