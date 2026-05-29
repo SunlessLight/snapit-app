@@ -1,0 +1,25 @@
+{
+  "chip": {
+    "summary": "Beberapa cadangan sebelum teruskan",
+    "dismissAlt": "Tutup cadangan"
+  },
+  "modal": {
+    "title": "Semak gambar anda",
+    "subtitle": "Isu-isu ini mungkin menjejaskan hasil akhir. Ambil semula gambar untuk hasil lebih baik, atau teruskan dengan gambar ini."
+  },
+  "warnings": {
+    "severeBlur": "Gambar sangat kabur — pegang telefon dengan stabil dan cuba semula.",
+    "mildBlur": "Gambar agak kabur — gambar yang lebih tajam akan kelihatan lebih baik.",
+    "severeDark": "Gambar terlalu gelap untuk diselamatkan — alih ke tempat yang lebih terang.",
+    "mildDark": "Gambar lebih gelap daripada ideal.",
+    "severeBright": "Gambar terlalu terang — cahaya terlalu kuat pada hidangan.",
+    "mildBright": "Gambar lebih terang daripada ideal.",
+    "tooSmall": "Resolusi gambar terlalu kecil untuk hasil yang baik.",
+    "lowRes": "Resolusi gambar rendah — kualiti hasil mungkin terjejas.",
+    "oddAspect": "Bentuk gambar luar biasa — adakah ini gambar makanan atau tangkap skrin?"
+  },
+  "actions": {
+    "retake": "Ambil semula",
+    "useAnyway": "Guna juga"
+  }
+}

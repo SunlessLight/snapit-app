@@ -1,0 +1,25 @@
+{
+  "chip": {
+    "summary": "继续前的一些建议",
+    "dismissAlt": "关闭建议"
+  },
+  "modal": {
+    "title": "检查照片",
+    "subtitle": "这些问题可能影响最终效果。重新拍摄以获得更好的照片，或继续使用此照片。"
+  },
+  "warnings": {
+    "severeBlur": "照片太模糊 — 请稳住手机重新拍摄。",
+    "mildBlur": "照片有点模糊 — 更清晰的照片效果更好。",
+    "severeDark": "照片过暗，无法挽救 — 请移至光线更好的位置。",
+    "mildDark": "照片偏暗。",
+    "severeBright": "照片过曝 — 光线过强照射在菜品上。",
+    "mildBright": "照片偏亮。",
+    "tooSmall": "照片分辨率过低，无法生成良好效果。",
+    "lowRes": "照片分辨率较低 — 输出质量可能受影响。",
+    "oddAspect": "照片比例异常 — 这是菜品照片还是截图？"
+  },
+  "actions": {
+    "retake": "重新拍摄",
+    "useAnyway": "继续使用"
+  }
+}

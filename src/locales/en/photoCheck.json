@@ -1,0 +1,25 @@
+{
+  "chip": {
+    "summary": "A few tips before you continue",
+    "dismissAlt": "Dismiss tips"
+  },
+  "modal": {
+    "title": "Check your photo",
+    "subtitle": "These issues will likely hurt the result. Retake for a better photo, or use this one anyway."
+  },
+  "warnings": {
+    "severeBlur": "Photo is very blurry — steady your phone and try again.",
+    "mildBlur": "Photo looks a bit soft — a sharper shot will look better.",
+    "severeDark": "Photo is too dark to recover — move to better light.",
+    "mildDark": "Photo is darker than ideal.",
+    "severeBright": "Photo is overexposed — too much light on the dish.",
+    "mildBright": "Photo is brighter than ideal.",
+    "tooSmall": "Photo resolution is too small for good output.",
+    "lowRes": "Photo resolution is low — output quality may suffer.",
+    "oddAspect": "Unusual photo shape — is this a food photo or a screenshot?"
+  },
+  "actions": {
+    "retake": "Retake photo",
+    "useAnyway": "Use anyway"
+  }
+}

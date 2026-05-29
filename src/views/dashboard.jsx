@@ -1,8 +1,40 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import heic2any from 'heic2any';
 import { useTranslation } from 'react-i18next';
-import { Camera, ArrowRight, X, Loader2, UploadCloud, Sun, Focus, Lightbulb, Utensils, Crosshair, Users } from 'lucide-react';
-import GuidedCaptureModal from '../components/GuidedCaptureModal';
+import { Camera, ArrowRight, X, Loader2, UploadCloud, Sun, Focus, Lightbulb, Utensils, Users, AlertTriangle } from 'lucide-react';
+import PhotoCheckModal from '../components/PhotoCheckModal';
+import { checkStillImage } from '../utils/captureHeuristics';
+
+const ANALYSIS_SIZE = 512;
+
+// Decode a blob URL into ImageData on a small canvas, run the heuristic checks.
+// Resolves to { hardBlocks, softWarnings }; failures swallow to "no warnings"
+// so a quirky image never blocks the upload flow.
+const runPhotoCheck = (url) =>
+    new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const naturalDimensions = { width: img.naturalWidth, height: img.naturalHeight };
+            const canvas = document.createElement('canvas');
+            canvas.width = ANALYSIS_SIZE;
+            canvas.height = ANALYSIS_SIZE;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (!ctx) {
+                resolve({ hardBlocks: [], softWarnings: [] });
+                return;
+            }
+            ctx.drawImage(img, 0, 0, ANALYSIS_SIZE, ANALYSIS_SIZE);
+            try {
+                const imageData = ctx.getImageData(0, 0, ANALYSIS_SIZE, ANALYSIS_SIZE);
+                resolve(checkStillImage(imageData, naturalDimensions));
+            } catch (err) {
+                console.warn('Photo check failed:', err);
+                resolve({ hardBlocks: [], softWarnings: [] });
+            }
+        };
+        img.onerror = () => resolve({ hardBlocks: [], softWarnings: [] });
+        img.src = url;
+    });
 
 const PRO_TIPS = [
     { id: 1, icon: Sun },
@@ -12,10 +44,16 @@ const PRO_TIPS = [
 ];
 
 export default function DashboardView({ onImageSelect, onImageRemove, mediaState, onNext, processingNudge, onDismissNudge }) {
-    const { t } = useTranslation(['dashboard', 'common', 'guidedCapture', 'processing']);
+    const { t } = useTranslation(['dashboard', 'common', 'photoCheck', 'processing']);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
-    const [showGuidedCapture, setShowGuidedCapture] = useState(false);
+    // Photo Check (post-capture heuristics). Hard blocks → modal awaiting
+    // user decision (Retake | Use anyway); soft warnings → dismissible chip
+    // above the preview. pendingPhoto holds the file+url until the user
+    // resolves the modal — we only commit via onImageSelect on Use anyway.
+    const [photoCheckHardBlocks, setPhotoCheckHardBlocks] = useState([]);
+    const [photoCheckSoftWarnings, setPhotoCheckSoftWarnings] = useState([]);
+    const [pendingPhoto, setPendingPhoto] = useState(null);
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
     const hasImage = mediaState.file !== null;
@@ -62,7 +100,19 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
             }
 
             const url = URL.createObjectURL(finalProcessedFile);
-            onImageSelect(finalProcessedFile, url);
+            const { hardBlocks, softWarnings } = await runPhotoCheck(url);
+
+            if (hardBlocks.length > 0) {
+                // Stash the photo; commit happens later via Use anyway, or it
+                // gets discarded via Retake. Don't call onImageSelect yet.
+                setPendingPhoto({ file: finalProcessedFile, url });
+                setPhotoCheckHardBlocks(hardBlocks);
+                setPhotoCheckSoftWarnings(softWarnings);
+            } else {
+                onImageSelect(finalProcessedFile, url);
+                setPhotoCheckSoftWarnings(softWarnings);
+                setPhotoCheckHardBlocks([]);
+            }
 
             const endTime = performance.now();
             console.log(`File processed in ${(endTime - startTime).toFixed(2)} ms`);
@@ -100,6 +150,24 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
         }
     }, []);
 
+    const handlePhotoCheckRetake = () => {
+        if (pendingPhoto?.url) URL.revokeObjectURL(pendingPhoto.url);
+        setPendingPhoto(null);
+        setPhotoCheckHardBlocks([]);
+        setPhotoCheckSoftWarnings([]);
+    };
+
+    const handlePhotoCheckUseAnyway = () => {
+        if (!pendingPhoto) return;
+        onImageSelect(pendingPhoto.file, pendingPhoto.url);
+        setPendingPhoto(null);
+        setPhotoCheckHardBlocks([]);
+        // User explicitly accepted the warnings — no lingering chip.
+        setPhotoCheckSoftWarnings([]);
+    };
+
+    const dismissSoftWarnings = () => setPhotoCheckSoftWarnings([]);
+
     return (
         <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
 
@@ -135,6 +203,35 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
                                 aria-label={t('processing:humanDetected.dismiss')}
                             >
                                 <X size={16} strokeWidth={2.5} />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Photo Check soft-warn chip. Only renders when the post-
+                        capture heuristics flagged non-blocking issues AND a
+                        photo is committed. Hard blocks live in the modal. */}
+                    {hasImage && photoCheckSoftWarnings.length > 0 && (
+                        <div className="w-[85%] sm:w-full max-w-2xl mx-auto mb-2 md:mb-3 bg-amber-50 border border-amber-200 rounded-2xl p-3 md:p-4 flex items-start gap-2.5 animate-fade-in">
+                            <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs md:text-sm font-semibold text-amber-900">
+                                    {t('photoCheck:chip.summary')}
+                                </p>
+                                <ul className="mt-1 space-y-0.5">
+                                    {photoCheckSoftWarnings.map((w) => (
+                                        <li key={w.key} className="text-xs text-amber-800 leading-snug">
+                                            • {t(`photoCheck:warnings.${w.key}`)}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={dismissSoftWarnings}
+                                className="p-1 text-amber-700 hover:text-amber-900 active:scale-95 transition-colors flex-shrink-0"
+                                aria-label={t('photoCheck:chip.dismissAlt')}
+                            >
+                                <X size={14} strokeWidth={2.5} />
                             </button>
                         </div>
                     )}
@@ -228,29 +325,16 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
                         ) : (
                             <>
                                 <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleFileChange} className="hidden" />
-                                <div className="flex items-end gap-6 md:gap-10">
-                                    <div className="flex flex-col items-center gap-1.5 md:gap-2">
-                                        <button
-                                            onClick={() => cameraInputRef.current.click()}
-                                            disabled={isProcessing}
-                                            className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-[#dc2626] border-4 border-white text-white flex items-center justify-center shadow-lg md:shadow-xl md:hover:scale-105 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            title="Open Camera"
-                                        >
-                                            <Camera size={26} strokeWidth={2} className="md:w-8 md:h-8" />
-                                        </button>
-                                        <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">{t('dashboard:actions.takePhoto')}</span>
-                                    </div>
-                                    <div className="flex flex-col items-center gap-1.5 md:gap-2">
-                                        <button
-                                            onClick={() => setShowGuidedCapture(true)}
-                                            disabled={isProcessing}
-                                            className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-white border-4 border-[#dc2626] text-[#dc2626] flex items-center justify-center shadow-lg md:shadow-xl md:hover:scale-105 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            title={t('guidedCapture:button.label')}
-                                        >
-                                            <Crosshair size={26} strokeWidth={2} className="md:w-8 md:h-8" />
-                                        </button>
-                                        <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">{t('guidedCapture:button.label')}</span>
-                                    </div>
+                                <div className="flex flex-col items-center gap-1.5 md:gap-2">
+                                    <button
+                                        onClick={() => cameraInputRef.current.click()}
+                                        disabled={isProcessing}
+                                        className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-[#dc2626] border-4 border-white text-white flex items-center justify-center shadow-lg md:shadow-xl md:hover:scale-105 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Open Camera"
+                                    >
+                                        <Camera size={26} strokeWidth={2} className="md:w-8 md:h-8" />
+                                    </button>
+                                    <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider opacity-60">{t('dashboard:actions.takePhoto')}</span>
                                 </div>
                             </>
                         )}
@@ -259,10 +343,11 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
                 </section>
             </div>
 
-            <GuidedCaptureModal
-                isOpen={showGuidedCapture}
-                onClose={() => setShowGuidedCapture(false)}
-                onCapture={onImageSelect}
+            <PhotoCheckModal
+                isOpen={photoCheckHardBlocks.length > 0}
+                warnings={[...photoCheckHardBlocks, ...photoCheckSoftWarnings]}
+                onRetake={handlePhotoCheckRetake}
+                onUseAnyway={handlePhotoCheckUseAnyway}
             />
         </div>
     );
