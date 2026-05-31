@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Sparkles, ArrowLeft, Utensils, CheckCircle2, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Sparkles, ArrowLeft, Utensils, CheckCircle2, MessageSquare, Image as ImageIcon, Share2, Store, ChevronDown } from 'lucide-react';
 import imageCompression from 'browser-image-compression'
 import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../components/SegmentedControl';
@@ -206,6 +206,33 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
     const handleUpdate = (key, value) => setConfig(prev => ({ ...prev, [key]: value }));
     const isPro = !!config.isContextPro;
 
+    // Standard-tier platform targeting. Multi-select; the backend reshapes the
+    // caption per platform. We never allow the selection to drop to zero (the
+    // last toggle is a no-op) so generation always has at least one target.
+    const platformOptions = [
+        { id: 'instagram', label: t('contextConfig:platforms.options.instagram.label'), desc: t('contextConfig:platforms.options.instagram.desc') },
+        { id: 'facebook', label: t('contextConfig:platforms.options.facebook.label'), desc: t('contextConfig:platforms.options.facebook.desc') },
+        { id: 'xiaohongshu', label: t('contextConfig:platforms.options.xiaohongshu.label'), desc: t('contextConfig:platforms.options.xiaohongshu.desc') },
+        { id: 'delivery', label: t('contextConfig:platforms.options.delivery.label'), desc: t('contextConfig:platforms.options.delivery.desc') },
+    ];
+    const selectedPlatforms = Array.isArray(config.platforms) && config.platforms.length
+        ? config.platforms
+        : ['instagram'];
+    const togglePlatform = (id) => setConfig(prev => {
+        const current = Array.isArray(prev.platforms) && prev.platforms.length ? prev.platforms : ['instagram'];
+        const next = current.includes(id)
+            ? current.filter((p) => p !== id)
+            : [...current, id];
+        // Refuse to deselect the last platform — keep prior selection intact.
+        return next.length ? { ...prev, platforms: next } : prev;
+    });
+
+    // Stall-info card is collapsed by default; auto-expand if any field is
+    // already filled (e.g. restored from a previous session) so it isn't hidden.
+    const [showStallInfo, setShowStallInfo] = useState(
+        !!(config.location || config.hours || config.contact)
+    );
+
     const toneOptions = [
         { id: 'casual', label: t('contextConfig:pro.tones.casual') },
         { id: 'punchy', label: t('contextConfig:pro.tones.punchy') },
@@ -322,6 +349,99 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                             onChange={(val) => handleUpdate('outputLanguage', val)}
                             className="w-full"
                         />
+                    </div>
+
+                    {/* Card: Platform targeting (Standard — multi-select) */}
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Share2 className="w-5 h-5 text-[#dc2626]" />
+                            <h2 className="font-serif font-bold text-lg">{t('contextConfig:platforms.heading')}</h2>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-4 leading-relaxed">{t('contextConfig:platforms.subtitle')}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {platformOptions.map((opt) => {
+                                const isSelected = selectedPlatforms.includes(opt.id);
+                                return (
+                                    <button
+                                        key={opt.id}
+                                        type="button"
+                                        onClick={() => togglePlatform(opt.id)}
+                                        className={`relative text-left py-2.5 px-3 rounded-xl border-[1.5px] transition-all active:scale-95 ${isSelected
+                                            ? 'border-[#dc2626] bg-red-50/50'
+                                            : 'border-gray-200 bg-white hover:border-gray-300'
+                                            }`}
+                                    >
+                                        {isSelected && (
+                                            <CheckCircle2 className="w-4 h-4 text-[#dc2626] absolute top-2 right-2" />
+                                        )}
+                                        <span className={`block text-xs md:text-sm font-semibold ${isSelected ? 'text-[#dc2626]' : 'text-gray-700'}`}>
+                                            {opt.label}
+                                        </span>
+                                        <span className="block text-[10px] md:text-xs text-gray-400 mt-0.5 leading-tight pr-4">
+                                            {opt.desc}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Card: Stall info (Standard — optional, collapsible, persisted) */}
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 md:p-6">
+                        <button
+                            type="button"
+                            onClick={() => setShowStallInfo((v) => !v)}
+                            className="w-full flex items-center gap-2 text-left"
+                        >
+                            <Store className="w-5 h-5 text-[#dc2626]" />
+                            <div className="flex-1 min-w-0">
+                                <h2 className="font-serif font-bold text-lg">{t('contextConfig:stallInfo.heading')}</h2>
+                                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{t('contextConfig:stallInfo.subtitle')}</p>
+                            </div>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${showStallInfo ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {showStallInfo && (
+                            <div className="space-y-4 mt-4">
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                                        {t('contextConfig:stallInfo.locationLabel')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder={t('contextConfig:stallInfo.locationPlaceholder')}
+                                        value={config.location || ""}
+                                        onChange={(e) => handleUpdate('location', e.target.value)}
+                                        className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                                        {t('contextConfig:stallInfo.hoursLabel')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder={t('contextConfig:stallInfo.hoursPlaceholder')}
+                                        value={config.hours || ""}
+                                        onChange={(e) => handleUpdate('hours', e.target.value)}
+                                        className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                                        {t('contextConfig:stallInfo.contactLabel')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder={t('contextConfig:stallInfo.contactPlaceholder')}
+                                        value={config.contact || ""}
+                                        onChange={(e) => handleUpdate('contact', e.target.value)}
+                                        className="w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium"
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-400 leading-relaxed ml-1">{t('contextConfig:stallInfo.hint')}</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Pro Card: Description + Tone (only when Pro ON) */}

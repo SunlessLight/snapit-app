@@ -19,6 +19,8 @@
   "startOver": "Muat Hidangan Baru",
   "toast": {
     "copied": "Teks disalin ke papan keratan!",
-    "copiedFallback": "Teks disalin! Sedia untuk ditampal."
+    "copiedFallback": "Teks disalin! Sedia untuk ditampal.",
+    "downloadFailed": "Muat turun gagal — cuba lagi.",
+    "shareFailed": "Kongsi gagal — cuba lagi."
   }
 }

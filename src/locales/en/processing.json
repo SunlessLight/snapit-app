@@ -10,10 +10,5 @@
     "network": "An unexpected network error occurred.",
     "title": "Generation Failed",
     "retry": "Go Back & Try Again"
-  },
-  "humanDetected": {
-    "title": "Looks like there's a person in this shot",
-    "body": "Try retaking with just the dish in frame — the background generator works best on plain food photos.",
-    "dismiss": "Dismiss"
   }
 }

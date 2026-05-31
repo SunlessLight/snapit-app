@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, RefreshCw, Loader2, Image as ImageIcon, Sparkles, MessageSquare, AlertCircle, AlertTriangle, Camera, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Image as ImageIcon, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -26,8 +26,15 @@ const AutosizeTextarea = ({ value, onChange, rows = 3, disabled = false, placeho
     );
 };
 
-export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, setAiOutput, onNext, onPrev, onRetake }) {
+export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, setAiOutput, onNext, onPrev }) {
     const { t } = useTranslation(['review', 'common']);
+
+    // Per-platform captions. Review regenerates ONE platform at a time; the
+    // active platform pill drives which caption the change-prompt targets.
+    const captions = Array.isArray(aiOutput?.captions) ? aiOutput.captions : [];
+    const [activeCaptionIdx, setActiveCaptionIdx] = useState(0);
+    const activeCaption = captions[activeCaptionIdx] || captions[0] || null;
+    const platformLabel = (platform) => t(`common:platforms.${platform}`, platform);
 
     const [captionChangePrompt, setCaptionChangePrompt] = useState('');
     const [bgChangePrompt, setBgChangePrompt] = useState('');
@@ -35,21 +42,17 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
     const [isRegeneratingBg, setIsRegeneratingBg] = useState(false);
     const [captionError, setCaptionError] = useState(null);
     const [bgError, setBgError] = useState(null);
+    // AbortController per regen lane. Mirrors the processingscreen.jsx pattern —
+    // non-negotiable under StrictMode (first effect's fetch resolves into a
+    // dead closure), and on Review specifically prevents a slow first click
+    // from clobbering a faster second click's result.
+    const captionAbortRef = useRef(null);
+    const bgAbortRef = useRef(null);
     // Phase 6.7.4 — 'vary' picks a fresh random seed (new composition);
     // 'fix' replays aiOutput.bgSeed so the prompt-delta is the only thing
     // that changes. Default vary because users usually click regen when
     // they didn't like the composition.
     const [seedMode, setSeedMode] = useState('vary');
-    // Chip is dismissible but the underlying reason stays on aiOutput so a
-    // back-nav-then-resubmit doesn't keep re-rendering it for the same job.
-    // Local state covers the dismiss action within this view's lifetime.
-    const [chipDismissed, setChipDismissed] = useState(false);
-
-    // Phase 6.7.2 — only render the chip + Retake when the gate routed us here
-    // because of low-confidence. Normal Pro-assistive Review never sees this
-    // (the chip would be noise for users who opted into Review).
-    const isForcedReview = aiOutput?.forceReviewReason === 'low_confidence_cutout';
-    const showChip = isForcedReview && !chipDismissed;
 
     const showBgPanel = !!marketingConfig.generateBackground;
     const sourceImage = mediaState.processedFile || mediaState.file || mediaState.originalFile;
@@ -60,13 +63,25 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
             : `data:image/jpeg;base64,${aiOutput.generatedImageBase64}`)
         : (mediaState.processedUrl || mediaState.url);
 
-    const handleUpdateField = (key, value) => setAiOutput(prev => ({ ...prev, [key]: value }));
+    useEffect(() => {
+        return () => {
+            captionAbortRef.current?.abort();
+            bgAbortRef.current?.abort();
+        };
+    }, []);
 
     const handleRegenerateCaptions = async () => {
         if (!sourceImage) {
             setCaptionError(t('review:errors.noImage'));
             return;
         }
+        if (!activeCaption) {
+            setCaptionError(t('review:errors.generic'));
+            return;
+        }
+        captionAbortRef.current?.abort();
+        const controller = new AbortController();
+        captionAbortRef.current = controller;
         setCaptionError(null);
         setIsRegeneratingCaptions(true);
 
@@ -80,30 +95,46 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
             formData.append('captionLength', marketingConfig.captionLength || 'short');
             formData.append('isContextPro', String(!!marketingConfig.isContextPro));
             formData.append('description', marketingConfig.description || '');
-            formData.append('currentTitle', aiOutput.title || '');
-            formData.append('currentDescription', aiOutput.description || '');
-            formData.append('currentCaption', aiOutput.caption || '');
+            // Targeted, per-platform regen. Send the active platform + its current
+            // caption (and RED note title) so the backend refines just this one.
+            formData.append('platform', activeCaption.platform || 'instagram');
+            formData.append('location', marketingConfig.location || '');
+            formData.append('hours', marketingConfig.hours || '');
+            formData.append('contact', marketingConfig.contact || '');
+            formData.append('currentCaption', activeCaption.body || '');
+            formData.append('currentNoteTitle', activeCaption.noteTitle || '');
             formData.append('changePrompt', captionChangePrompt);
 
             const res = await fetch(`${API_BASE_URL}/api/regenerate/captions`, {
                 method: 'POST',
                 body: formData,
+                signal: controller.signal,
             });
             const json = await res.json();
             if (!res.ok || !json.success) {
                 throw new Error(json.error || `Server error: ${res.status}`);
             }
-            setAiOutput(prev => ({
-                ...prev,
-                title: json.title,
-                description: json.description,
-                caption: json.caption,
-            }));
+            // Update only the active platform's caption entry.
+            setAiOutput(prev => {
+                const next = Array.isArray(prev.captions) ? [...prev.captions] : [];
+                if (next[activeCaptionIdx]) {
+                    next[activeCaptionIdx] = {
+                        ...next[activeCaptionIdx],
+                        body: json.caption,
+                        ...(json.noteTitle !== undefined ? { noteTitle: json.noteTitle } : {}),
+                    };
+                }
+                return { ...prev, captions: next };
+            });
             setCaptionChangePrompt('');
         } catch (err) {
+            if (err.name === 'AbortError') return;
             setCaptionError(err.message || t('review:errors.generic'));
         } finally {
-            setIsRegeneratingCaptions(false);
+            if (captionAbortRef.current === controller) {
+                captionAbortRef.current = null;
+                setIsRegeneratingCaptions(false);
+            }
         }
     };
 
@@ -116,11 +147,16 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
             setBgError(t('review:errors.noBgPrompt'));
             return;
         }
+        bgAbortRef.current?.abort();
+        const controller = new AbortController();
+        bgAbortRef.current = controller;
         setBgError(null);
         setIsRegeneratingBg(true);
 
         try {
             const formData = new FormData();
+            // sourceImage = mediaState.processedFile (original food), NOT the prior
+            // bg-swap output — prevents artifact compounding across iterations.
             formData.append('image', sourceImage, 'snapit-source.png');
             formData.append('originalBackgroundPrompt', aiOutput.backgroundPrompt);
             formData.append('changePrompt', bgChangePrompt);
@@ -135,6 +171,7 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
             const res = await fetch(`${API_BASE_URL}/api/regenerate/background`, {
                 method: 'POST',
                 body: formData,
+                signal: controller.signal,
             });
             const json = await res.json();
             if (!res.ok || !json.success) {
@@ -148,9 +185,13 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
             }));
             setBgChangePrompt('');
         } catch (err) {
+            if (err.name === 'AbortError') return;
             setBgError(err.message || t('review:errors.generic'));
         } finally {
-            setIsRegeneratingBg(false);
+            if (bgAbortRef.current === controller) {
+                bgAbortRef.current = null;
+                setIsRegeneratingBg(false);
+            }
         }
     };
 
@@ -175,30 +216,6 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
                     </p>
                 </div>
             </header>
-
-            {showChip && (
-                <div className="px-4 md:px-6 max-w-xl mx-auto w-full">
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-                        <AlertTriangle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-amber-900">
-                                {t('review:lowConfidenceCutout.title')}
-                            </p>
-                            <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
-                                {t('review:lowConfidenceCutout.body')}
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setChipDismissed(true)}
-                            className="p-1 text-amber-700 hover:text-amber-900 active:scale-95 transition-colors flex-shrink-0"
-                            aria-label={t('review:lowConfidenceCutout.dismiss')}
-                        >
-                            <X size={16} strokeWidth={2.5} />
-                        </button>
-                    </div>
-                </div>
-            )}
 
             <div className="px-4 md:px-6 pb-8">
                 <div className="max-w-xl mx-auto space-y-5 pt-2">
@@ -307,40 +324,68 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
                         </div>
                         <p className="text-xs text-gray-500 mb-4 leading-relaxed">{t('review:captions.subtitle')}</p>
 
+                        {/* Read-only preview of the generated copy — the vendor
+                            reacts to it via the opinion box below. Final edits
+                            happen on the Results Hub (which has inline editing),
+                            so Review stays a feedback-and-regenerate surface. */}
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
                                     {t('review:captions.titleLabel')}
                                 </label>
-                                <input
-                                    type="text"
-                                    value={aiOutput.title || ''}
-                                    disabled={isRegeneratingCaptions}
-                                    onChange={(e) => handleUpdateField('title', e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
+                                <p className="px-4 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl font-medium whitespace-pre-wrap">
+                                    {aiOutput.title || ''}
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
                                     {t('review:captions.descriptionLabel')}
                                 </label>
-                                <AutosizeTextarea
-                                    value={aiOutput.description || ''}
-                                    onChange={(v) => handleUpdateField('description', v)}
-                                    rows={3}
-                                    disabled={isRegeneratingCaptions}
-                                />
+                                <p className="px-4 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl whitespace-pre-wrap leading-relaxed">
+                                    {aiOutput.description || ''}
+                                </p>
                             </div>
+                            {/* Platform selector — only when more than one platform
+                                was generated. Picks which caption the change-prompt
+                                below regenerates. */}
+                            {captions.length > 1 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {captions.map((c, idx) => {
+                                        const isActive = idx === activeCaptionIdx;
+                                        return (
+                                            <button
+                                                key={c.platform || idx}
+                                                type="button"
+                                                onClick={() => setActiveCaptionIdx(idx)}
+                                                disabled={isRegeneratingCaptions}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border-[1.5px] transition-all disabled:opacity-50 ${isActive
+                                                    ? 'border-[#dc2626] text-[#dc2626] bg-red-50/50'
+                                                    : 'border-gray-200 text-gray-500 bg-white hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                {platformLabel(c.platform)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            {activeCaption?.noteTitle !== undefined && (
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                                        {platformLabel(activeCaption.platform)} · {t('common:platforms.xiaohongshuTitle', 'Title')}
+                                    </label>
+                                    <p className="px-4 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl font-medium whitespace-pre-wrap">
+                                        {activeCaption.noteTitle || ''}
+                                    </p>
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
-                                    {t('review:captions.captionLabel')}
+                                    {activeCaption ? platformLabel(activeCaption.platform) : t('review:captions.captionLabel')}
                                 </label>
-                                <AutosizeTextarea
-                                    value={aiOutput.caption || ''}
-                                    onChange={(v) => handleUpdateField('caption', v)}
-                                    rows={5}
-                                    disabled={isRegeneratingCaptions}
-                                />
+                                <p className="px-4 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl whitespace-pre-wrap leading-relaxed">
+                                    {activeCaption?.body || ''}
+                                </p>
                             </div>
                         </div>
 
@@ -384,16 +429,6 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
             </div>
 
             <div className="px-4 md:px-6 pt-2 pb-8 max-w-xl mx-auto w-full space-y-3">
-                {isForcedReview && onRetake && (
-                    <button
-                        onClick={onRetake}
-                        disabled={anyLoading}
-                        className="w-full py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all bg-white border border-gray-200 text-gray-800 hover:border-[#dc2626] hover:text-[#dc2626] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Camera className="w-4 h-4" />
-                        {t('review:lowConfidenceCutout.retake')}
-                    </button>
-                )}
                 <button
                     onClick={onNext}
                     disabled={anyLoading}

@@ -64,6 +64,15 @@ const DEFAULT_MARKETING_CONFIG = {
   tone: "casual",
   captionLength: "short",
   backgroundDescription: "",
+  // Standard-tier platform targeting. Multi-select; the caption is reshaped per
+  // platform on the backend. Default Instagram so single-platform vendors get a
+  // focused output with no extra clicks.
+  platforms: ["instagram"],
+  // Optional persisted stall info (poor-man's profile until Phase 7 accounts).
+  // Woven into social captions when present; delivery menu ignores them.
+  location: "",
+  hours: "",
+  contact: "",
   // Assistive mode: Pro users land on Review (step 5) instead of skipping to Results
   // Hub (step 6). Defaults true so first-time Pro users get the in-loop experience;
   // they can opt out via the toggle in Context Config and that choice persists.
@@ -72,16 +81,10 @@ const DEFAULT_MARKETING_CONFIG = {
 
 const ALLOWED_TONES = new Set(['casual', 'punchy', 'polished', 'playful']);
 const ALLOWED_LENGTHS = new Set(['short', 'medium', 'long']);
+const ALLOWED_PLATFORMS = new Set(['instagram', 'facebook', 'xiaohongshu', 'delivery']);
 
 const MEDIA_STATE_STORAGE_KEY = 'snapit:mediaState';
 const MARKETING_CONFIG_STORAGE_KEY = 'snapit:marketingConfig';
-
-// Photoroom uncertainty thresholds. Score is read off the /v2/edit response
-// header (0=confident, 1=unsure, -1=humans-in-frame). 0.5 is a starting point —
-// tune after observing 20-30 real generations. Both constants named so the
-// threshold lives in one place.
-const LOW_CONFIDENCE_THRESHOLD = 0.5;
-const HUMAN_DETECTED_SCORE = -1;
 
 // Phase 6.7.5 — feature-flagged mask-preview step. When enabled, a new
 // checkpoint (step 4) sits between Context Config and Processing for bg-swap
@@ -124,20 +127,19 @@ const loadFromStorage = (key, defaults) => {
 const DEFAULT_AI_OUTPUT = {
   title: "🔥 Sedap Giler Nasi Lemak Ayam Goreng Berempah!",
   description: "Crispy on the outside, juicy on the inside! Our signature Nasi Lemak comes with freshly fried Ayam Berempah, fragrant coconut rice, and our secret recipe sambal that hits all the right notes.",
-  caption: "Craving something pedas and sedap? 🤤 Come try our crowd-favorite Nasi Lemak today!\n\n📍 Find us at Food Court Subang\n💵 Only RM 12.00!\n\n#NasiLemak #MalaysianFood #SedapGiler",
+  // Per-platform captions: array of { platform, body, noteTitle? } ordered by
+  // the vendor's selection. Defaults to a single Instagram entry.
+  captions: [
+    {
+      platform: "instagram",
+      body: "Craving something pedas and sedap? 🤤 Come try our crowd-favorite Nasi Lemak today!\n\n📍 Find us at Food Court Subang\n💵 Only RM 12.00!\n\n#NasiLemak #MalaysianFood #SedapGiler",
+    },
+  ],
   generatedImageBase64: null, // Leave null so our fallback triggers
-  // Photoroom uncertainty score from /v2/edit response header (0=confident,
-  // 1=unsure, -1=humans-in-frame). Drives the 6.7.2 force-Review gate. null
-  // means "no signal" (header omitted or bg-swap skipped) — gate treats null
-  // as confident and doesn't force-route.
-  bgUncertaintyScore: null,
   // Phase 6.7.4 — Photoroom seed used for the most recent bg-swap. Drives
   // ReviewScreen's "Tweak this one" mode (replay this exact seed). null
   // before the first bg-swap; backend always echoes the seed it picked.
   bgSeed: null,
-  // Reason transient: set when the 6.7.2 gate routes a Standard user into
-  // Review against their flow. Drives the ReviewScreen chip + Retake button.
-  forceReviewReason: null,
   // Dummy AI-enhanced image (e.g., a beautifully lit version)
   imageUrl: foodImage
 };
@@ -177,17 +179,19 @@ export default function App() {
     // Migrate: pre-redesign localStorage may carry legacy tones (funny/luxury/etc) or
     // no captionLength at all. Reset invalid values to Standard defaults so the Pro
     // pickers boot in a valid state instead of unselected/crashed.
+    // Sanitize persisted platforms: keep only valid ids, fall back to Instagram
+    // if storage is empty/legacy so the picker always boots with ≥1 selected.
+    const storedPlatforms = Array.isArray(stored.platforms)
+      ? stored.platforms.filter((p) => ALLOWED_PLATFORMS.has(p))
+      : [];
     return {
       ...stored,
       tone: ALLOWED_TONES.has(stored.tone) ? stored.tone : 'casual',
       captionLength: ALLOWED_LENGTHS.has(stored.captionLength) ? stored.captionLength : 'short',
+      platforms: storedPlatforms.length ? storedPlatforms : ['instagram'],
     };
   });
   const [aiOutput, setAiOutput] = useState(DEFAULT_AI_OUTPUT);
-  // Transient one-shot nudge surfaced on Dashboard. Set when the 6.7.2 gate
-  // bounces a user back to Upload (e.g. humans-in-frame). null = no nudge.
-  // Cleared on dismiss, on new image select, and on Start Over.
-  const [processingNudge, setProcessingNudge] = useState(null);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerWrapperRef = useRef(null);
@@ -199,51 +203,18 @@ export default function App() {
   const prevStep = useCallback(() => setCurrentStep((prev) => Math.max(prev - 1, STEP.DASHBOARD)), []);
 
   // ProcessingScreen calls this when the LLM job is done. Pro+assistive lands on
-  // the Review screen (step 5); everyone else skips it and goes straight to
-  // Results Hub (step 6). Routing decision lives here, not in ProcessingScreen,
-  // so the processing screen stays unaware of the assistive concept.
-  //
-  // Phase 6.7.2 — uncertainty gate. We receive the freshly-arrived `data`
-  // rather than reading `aiOutput` from state because setAiOutput hasn't
-  // committed by the time onComplete fires synchronously inside the same
-  // tick. Reading state here would always see the previous job's score.
-  //   score === -1   → humans-in-frame, bounce to Upload with a re-shoot nudge
-  //   score >= 0.5   → low-confidence cutout, force-route to Review with chip
-  //   otherwise      → normal assistive/autonomous branch
-  const handleProcessingComplete = useCallback((data) => {
-    const score = data?.bgUncertaintyScore;
-
-    if (score === HUMAN_DETECTED_SCORE) {
-      setProcessingNudge('human_detected');
-      setAiOutput((prev) => ({ ...prev, forceReviewReason: null }));
-      setCurrentStep(STEP.DASHBOARD);
-      return;
-    }
-
-    if (typeof score === 'number' && score >= LOW_CONFIDENCE_THRESHOLD) {
-      setAiOutput((prev) => ({ ...prev, forceReviewReason: 'low_confidence_cutout' }));
-      setCurrentStep(STEP.REVIEW);
-      return;
-    }
-
+  // the Review screen; everyone else skips it and goes straight to Results Hub.
+  // Routing decision lives here, not in ProcessingScreen, so the processing
+  // screen stays unaware of the assistive concept. The bad-cutout / human-in-
+  // frame case is handled earlier and visually at the mask-preview checkpoint
+  // (the vendor sees the cutout and decides), so there's no score-based gate.
+  const handleProcessingComplete = useCallback(() => {
     const goReview = !!marketingConfig.isContextPro && !!marketingConfig.assistiveMode;
-    setAiOutput((prev) => ({ ...prev, forceReviewReason: null }));
     setCurrentStep(goReview ? STEP.REVIEW : STEP.RESULTS);
   }, [marketingConfig.isContextPro, marketingConfig.assistiveMode]);
 
-  // Dashboard banner dismiss for the human-detected nudge.
-  const handleDismissProcessingNudge = useCallback(() => setProcessingNudge(null), []);
-
-  // ReviewScreen Retake (only rendered when forceReviewReason ===
-  // 'low_confidence_cutout'). Clears aiOutput + bounces back to Upload.
-  const handleRetakeFromReview = useCallback(() => {
-    setAiOutput(DEFAULT_AI_OUTPUT);
-    setCurrentStep(STEP.DASHBOARD);
-  }, []);
-
   // Phase 6.7.5 — MaskPreview "Retake" (cheap, pre-generation bail-out).
-  // Same UX as the forced-Review Retake but no aiOutput to clear since we
-  // haven't generated anything yet.
+  // No aiOutput to clear since we haven't generated anything yet.
   const handleRetakeFromMaskPreview = useCallback(() => {
     setCurrentStep(STEP.DASHBOARD);
   }, []);
@@ -260,8 +231,6 @@ export default function App() {
   }, []);
 
   const handleImageSelect = useCallback((file, previewUrl) => {
-    // New upload supersedes any prior re-shoot nudge.
-    setProcessingNudge(null);
     setMediaState(prev => {
       if (prev.processedUrl) URL.revokeObjectURL(prev.processedUrl);
       if (prev.originalUrl && prev.originalUrl !== prev.url) URL.revokeObjectURL(prev.originalUrl);
@@ -449,7 +418,7 @@ export default function App() {
         // This shouldn't happen (authenticated users skip to Dashboard), but keep as fallback
         return <WelcomeScreen onLogin={handleShowLogin} onSignUp={handleShowSignUp} />;
       case STEP.DASHBOARD:
-        return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} processingNudge={processingNudge} onDismissNudge={handleDismissProcessingNudge} />;
+        return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
       case STEP.EDITOR:
         return <MediaEditorView userName={userName} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
       case STEP.CONFIG:
@@ -465,7 +434,7 @@ export default function App() {
       case STEP.PROCESSING:
         return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onPrev={prevStep} />;
       case STEP.REVIEW:
-        return <ReviewScreen mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onNext={nextStep} onPrev={prevStep} onRetake={handleRetakeFromReview} />;
+        return <ReviewScreen mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onNext={nextStep} onPrev={prevStep} />;
       case STEP.RESULTS:
         return <ResultsHubView userName={userName} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
       default:

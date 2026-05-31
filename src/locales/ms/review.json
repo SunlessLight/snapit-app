@@ -20,7 +20,7 @@
   },
   "captions": {
     "heading": "Tajuk, Penerangan & Kapsyen",
-    "subtitle": "Ubah mana-mana medan terus, atau beritahu AI apa yang nak dibetulkan di bawah.",
+    "subtitle": "Beritahu AI apa yang nak diubah di bawah. Teks akhir boleh disunting di skrin hasil.",
     "titleLabel": "Tajuk",
     "descriptionLabel": "Penerangan",
     "captionLabel": "Kapsyen",
@@ -29,12 +29,6 @@
     "regenerateButton": "Jana Semula Kapsyen"
   },
   "finaliseButton": "Sudah Cantik — Lihat Hasil",
-  "lowConfidenceCutout": {
-    "title": "Semakan ringkas disyorkan",
-    "body": "Kami tak 100% yakin dengan potongan gambar ini — sila semak sebentar di sini.",
-    "dismiss": "Tutup",
-    "retake": "Ambil Gambar Semula"
-  },
   "errors": {
     "noImage": "Tiada gambar untuk dijana semula.",
     "noBgPrompt": "Prompt latar belakang asal hilang — kembali untuk jana dahulu.",

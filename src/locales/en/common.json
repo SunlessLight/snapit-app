@@ -6,5 +6,12 @@
   "generate": "Generate",
   "on": "ON",
   "off": "OFF",
-  "guest": "Guest"
+  "guest": "Guest",
+  "platforms": {
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "xiaohongshu": "小红书 / RED",
+    "delivery": "Grab / Panda Menu",
+    "xiaohongshuTitle": "Note Title"
+  }
 }

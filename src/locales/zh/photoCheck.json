@@ -4,22 +4,33 @@
     "dismissAlt": "关闭建议"
   },
   "modal": {
-    "title": "检查照片",
-    "subtitle": "这些问题可能影响最终效果。重新拍摄以获得更好的照片，或继续使用此照片。"
+    "title": "关于这张照片的小提示",
+    "subtitle": "更清晰的照片通常效果更好 — 但由你决定。可以继续使用,或参考下方提示再拍一张。"
   },
   "warnings": {
-    "severeBlur": "照片太模糊 — 请稳住手机重新拍摄。",
-    "mildBlur": "照片有点模糊 — 更清晰的照片效果更好。",
-    "severeDark": "照片过暗，无法挽救 — 请移至光线更好的位置。",
-    "mildDark": "照片偏暗。",
-    "severeBright": "照片过曝 — 光线过强照射在菜品上。",
-    "mildBright": "照片偏亮。",
-    "tooSmall": "照片分辨率过低，无法生成良好效果。",
-    "lowRes": "照片分辨率较低 — 输出质量可能受影响。",
-    "oddAspect": "照片比例异常 — 这是菜品照片还是截图？"
+    "severeBlur": "这张照片有点模糊。",
+    "mildBlur": "这张照片略微不清晰。",
+    "severeDark": "这张照片很暗。",
+    "mildDark": "这张照片有点暗。",
+    "severeBright": "这张照片有点过曝。",
+    "mildBright": "这张照片有点亮。",
+    "tooSmall": "这张照片尺寸偏小。",
+    "lowRes": "这张照片分辨率较低。",
+    "oddAspect": "这张照片比例不太寻常。"
+  },
+  "tips": {
+    "severeBlur": "提示:点一下屏幕上的菜品对焦,再稳住手机拍。",
+    "mildBlur": "提示:拍之前点一下屏幕上的菜品对焦。",
+    "severeDark": "提示:走到窗边或开大一点灯。",
+    "mildDark": "提示:光线再亮一点,菜品会更突出。",
+    "severeBright": "提示:避开直射强光或刺眼的阳光。",
+    "mildBright": "提示:让光线柔和一些,或换个角度避开反光。",
+    "tooSmall": "提示:靠近菜品,并用主摄像头拍。",
+    "lowRes": "提示:再靠近一点,让菜品填满画面。",
+    "oddAspect": "提示:正对菜品拍,让它占满大部分画面。"
   },
   "actions": {
-    "retake": "重新拍摄",
-    "useAnyway": "继续使用"
+    "retake": "再拍一张",
+    "useThisPhoto": "使用这张"
   }
 }

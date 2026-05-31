@@ -19,6 +19,8 @@
   "startOver": "Start New Dish",
   "toast": {
     "copied": "Text copied to clipboard!",
-    "copiedFallback": "Copied text! Ready to paste."
+    "copiedFallback": "Copied text! Ready to paste.",
+    "downloadFailed": "Couldn't download — try again.",
+    "shareFailed": "Couldn't share — try again."
   }
 }

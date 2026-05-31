@@ -82,10 +82,19 @@ const ContentCard = ({ label, value, field, onUpdate }) => {
 
 // --- Main View Component ---
 export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onStartOver }) {
-    const { t } = useTranslation('resultsHub');
+    const { t } = useTranslation(['resultsHub', 'common']);
     const [sliderValue, setSliderValue] = useState(100);
     const [toastMessage, setToastMessage] = useState(null);
 
+    // Per-platform captions: array of { platform, body, noteTitle? }. Guard
+    // against a legacy single-caption shape just in case persisted/default
+    // output predates the multi-platform change.
+    const captions = Array.isArray(aiOutput?.captions) ? aiOutput.captions : [];
+    const platformLabel = (platform) => t(`common:platforms.${platform}`, platform);
+
+    // "before" must be originalUrl — url is overwritten by Claid's enhanced
+    // blob in handleAutoEnhance, so using it here would put the enhanced image
+    // on both sides of the slider when bg-swap is off.
     const originalImgSrc = mediaState.originalUrl || mediaState.url;
     const hasAiImage = Boolean(aiOutput?.generatedImageBase64);
 
@@ -104,6 +113,16 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
 
     const handleUpdateText = (key, value) => {
         setAiOutput(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Edit one platform caption in place. `key` is 'body' or 'noteTitle'.
+    const handleUpdateCaption = (index, key, value) => {
+        setAiOutput(prev => {
+            const next = Array.isArray(prev.captions) ? [...prev.captions] : [];
+            if (!next[index]) return prev;
+            next[index] = { ...next[index], [key]: value };
+            return { ...prev, captions: next };
+        });
     };
 
     const showToast = (msg) => {
@@ -125,18 +144,29 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
 
         const targetUrl = showingFinal ? finalImgSrc : originalImgSrc;
 
-        if (!targetUrl) return;
+        if (!targetUrl) {
+            showToast(t('toast.downloadFailed'));
+            return;
+        }
 
-        const link = document.createElement('a');
-        link.href = targetUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            const link = document.createElement('a');
+            link.href = targetUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Error downloading:", error);
+            showToast(t('toast.downloadFailed'));
+        }
     };
 
     const handleGlobalShare = async () => {
-        const combinedText = `${aiOutput.title}\n\n${aiOutput.description}\n\n${aiOutput.caption}`;
+        const captionsText = captions
+            .map((c) => `${platformLabel(c.platform)}:\n${c.noteTitle ? c.noteTitle + '\n' : ''}${c.body || ''}`)
+            .join('\n\n');
+        const combinedText = `${aiOutput.title}\n\n${aiOutput.description}\n\n${captionsText}`;
         const targetShareUrl = finalImgSrc;
 
         try {
@@ -151,13 +181,19 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                     files: [file]
                 });
             } else {
-                navigator.clipboard.writeText(combinedText);
+                await navigator.clipboard.writeText(combinedText);
                 showToast(t('toast.copied'));
             }
         } catch (error) {
+            // User dismissed the system share sheet — treat as no-op, not failure.
+            if (error.name === 'AbortError') return;
             console.error("Error sharing:", error);
-            navigator.clipboard.writeText(combinedText);
-            showToast(t('toast.copiedFallback'));
+            try {
+                await navigator.clipboard.writeText(combinedText);
+                showToast(t('toast.copiedFallback'));
+            } catch {
+                showToast(t('toast.shareFailed'));
+            }
         }
     };
 
@@ -269,12 +305,24 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                             field="description"
                             onUpdate={handleUpdateText}
                         />
-                        <ContentCard
-                            label={t('labels.caption')}
-                            value={aiOutput.caption}
-                            field="caption"
-                            onUpdate={handleUpdateText}
-                        />
+                        {captions.map((c, idx) => (
+                            <React.Fragment key={c.platform || idx}>
+                                {c.noteTitle !== undefined && (
+                                    <ContentCard
+                                        label={`${platformLabel(c.platform)} · ${t('common:platforms.xiaohongshuTitle', 'Title')}`}
+                                        value={c.noteTitle}
+                                        field="noteTitle"
+                                        onUpdate={(_, val) => handleUpdateCaption(idx, 'noteTitle', val)}
+                                    />
+                                )}
+                                <ContentCard
+                                    label={platformLabel(c.platform)}
+                                    value={c.body}
+                                    field="body"
+                                    onUpdate={(_, val) => handleUpdateCaption(idx, 'body', val)}
+                                />
+                            </React.Fragment>
+                        ))}
                     </section>
                 </div>
 

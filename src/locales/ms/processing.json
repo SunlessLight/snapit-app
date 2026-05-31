@@ -10,10 +10,5 @@
     "network": "Ralat rangkaian yang tidak dijangka berlaku.",
     "title": "Penjanaan Gagal",
     "retry": "Kembali & Cuba Lagi"
-  },
-  "humanDetected": {
-    "title": "Nampak ada orang dalam gambar ini",
-    "body": "Cuba ambil semula dengan hidangan sahaja — penjana latar berfungsi paling baik untuk gambar makanan tunggal.",
-    "dismiss": "Tutup"
   }
 }

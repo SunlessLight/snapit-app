@@ -12,6 +12,27 @@
   "language": {
     "heading": "Bahasa Kapsyen"
   },
+  "platforms": {
+    "heading": "Nak post kat mana?",
+    "subtitle": "Pilih satu atau lebih — kami tulis setiap kapsyen ikut gaya sebenar platform itu.",
+    "options": {
+      "instagram": { "label": "Instagram", "desc": "Hook + hashtag" },
+      "facebook": { "label": "Facebook", "desc": "Santai, komuniti" },
+      "xiaohongshu": { "label": "小红书 / RED", "desc": "Gaya nota 种草" },
+      "delivery": { "label": "Grab / Panda", "desc": "Penerangan menu" }
+    }
+  },
+  "stallInfo": {
+    "heading": "Info gerai anda",
+    "subtitle": "Pilihan. Isi sekali — kami guna semula pada setiap post.",
+    "locationLabel": "Lokasi",
+    "locationPlaceholder": "cth., Bangsar, KL",
+    "hoursLabel": "Waktu operasi",
+    "hoursPlaceholder": "cth., 8 pagi–3 petang setiap hari",
+    "contactLabel": "Hubungi / WhatsApp",
+    "contactPlaceholder": "cth., 012-345 6789",
+    "hint": "Dimasukkan ke dalam kapsyen sosial supaya pelanggan tahu di mana, bila dan cara order. Menu penghantaran tidak guna ini."
+  },
   "pro": {
     "heading": "Konteks Pro",
     "descriptionLabel": "Penerangan",

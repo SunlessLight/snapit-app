@@ -12,6 +12,27 @@
   "language": {
     "heading": "Caption Language"
   },
+  "platforms": {
+    "heading": "Where will you post?",
+    "subtitle": "Pick one or more — we write each caption to fit how people actually post there.",
+    "options": {
+      "instagram": { "label": "Instagram", "desc": "Hook + hashtags" },
+      "facebook": { "label": "Facebook", "desc": "Chatty, community" },
+      "xiaohongshu": { "label": "小红书 / RED", "desc": "种草 note style" },
+      "delivery": { "label": "Grab / Panda", "desc": "Menu description" }
+    }
+  },
+  "stallInfo": {
+    "heading": "Your stall info",
+    "subtitle": "Optional. Fill once — we reuse it on every post.",
+    "locationLabel": "Location",
+    "locationPlaceholder": "e.g., Bangsar, KL",
+    "hoursLabel": "Operating hours",
+    "hoursPlaceholder": "e.g., 8am–3pm daily",
+    "contactLabel": "Contact / WhatsApp",
+    "contactPlaceholder": "e.g., 012-345 6789",
+    "hint": "Added to your social captions so customers know where, when, and how to order. The delivery menu skips this."
+  },
   "pro": {
     "heading": "Pro Context",
     "descriptionLabel": "Description",

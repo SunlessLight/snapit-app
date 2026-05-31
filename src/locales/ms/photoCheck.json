@@ -4,22 +4,33 @@
     "dismissAlt": "Tutup cadangan"
   },
   "modal": {
-    "title": "Semak gambar anda",
-    "subtitle": "Isu-isu ini mungkin menjejaskan hasil akhir. Ambil semula gambar untuk hasil lebih baik, atau teruskan dengan gambar ini."
+    "title": "Tip ringkas tentang gambar ini",
+    "subtitle": "Gambar yang lebih jelas biasanya beri hasil lebih baik — tapi terpulang pada anda. Guna yang ini, atau cuba lagi ikut tip di bawah."
   },
   "warnings": {
-    "severeBlur": "Gambar sangat kabur — pegang telefon dengan stabil dan cuba semula.",
-    "mildBlur": "Gambar agak kabur — gambar yang lebih tajam akan kelihatan lebih baik.",
-    "severeDark": "Gambar terlalu gelap untuk diselamatkan — alih ke tempat yang lebih terang.",
-    "mildDark": "Gambar lebih gelap daripada ideal.",
-    "severeBright": "Gambar terlalu terang — cahaya terlalu kuat pada hidangan.",
-    "mildBright": "Gambar lebih terang daripada ideal.",
-    "tooSmall": "Resolusi gambar terlalu kecil untuk hasil yang baik.",
-    "lowRes": "Resolusi gambar rendah — kualiti hasil mungkin terjejas.",
-    "oddAspect": "Bentuk gambar luar biasa — adakah ini gambar makanan atau tangkap skrin?"
+    "severeBlur": "Gambar ini nampak kabur.",
+    "mildBlur": "Gambar ini agak kurang tajam.",
+    "severeDark": "Gambar ini nampak sangat gelap.",
+    "mildDark": "Gambar ini agak gelap.",
+    "severeBright": "Gambar ini nampak terlalu terang.",
+    "mildBright": "Gambar ini agak terang.",
+    "tooSmall": "Gambar ini agak kecil.",
+    "lowRes": "Gambar ini resolusi rendah.",
+    "oddAspect": "Gambar ini berbentuk luar biasa."
+  },
+  "tips": {
+    "severeBlur": "Tip: ketik makanan pada skrin untuk fokus, kemudian pegang stabil.",
+    "mildBlur": "Tip: ketik makanan pada skrin untuk fokus sebelum ambil gambar.",
+    "severeDark": "Tip: alih dekat tingkap atau pasang lampu lebih terang.",
+    "mildDark": "Tip: sedikit cahaya lagi akan buat hidangan menonjol.",
+    "severeBright": "Tip: elak silau terus atau cahaya matahari yang kuat.",
+    "mildBright": "Tip: lembutkan cahaya atau ubah sudut jauh dari silau.",
+    "tooSmall": "Tip: dekatkan ke hidangan dan guna kamera utama.",
+    "lowRes": "Tip: dekat sedikit supaya hidangan memenuhi bingkai.",
+    "oddAspect": "Tip: ambil betul-betul depan hidangan, penuhi sebahagian besar gambar."
   },
   "actions": {
-    "retake": "Ambil semula",
-    "useAnyway": "Guna juga"
+    "retake": "Ambil gambar lain",
+    "useThisPhoto": "Guna gambar ini"
   }
 }

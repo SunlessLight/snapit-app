@@ -30,6 +30,12 @@ export default function ProcessingScreen({
     const tone = marketingConfig?.tone || "casual";
     const captionLength = marketingConfig?.captionLength || "short";
     const backgroundDescription = marketingConfig?.backgroundDescription || "";
+    const platforms = Array.isArray(marketingConfig?.platforms) && marketingConfig.platforms.length
+        ? marketingConfig.platforms
+        : ["instagram"];
+    const location = marketingConfig?.location || "";
+    const hours = marketingConfig?.hours || "";
+    const contact = marketingConfig?.contact || "";
 
     console.log("Current File:", mediaState.file)
 
@@ -78,6 +84,10 @@ export default function ProcessingScreen({
                 formData.append('tone', tone);
                 formData.append('captionLength', captionLength);
                 formData.append('backgroundDescription', backgroundDescription);
+                formData.append('platforms', platforms.join(','));
+                formData.append('location', location);
+                formData.append('hours', hours);
+                formData.append('contact', contact);
 
                 // STEP 1: Initial POST to start the job
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {
@@ -118,11 +128,9 @@ export default function ProcessingScreen({
                         if (job.status === 'completed') {
                             clearInterval(pollTimer);
                             setAiOutput(job.data);
-                            // Pass job.data directly — App's gate needs the
-                            // fresh bgUncertaintyScore now, not after the
-                            // setAiOutput commit (which is still pending in
-                            // this synchronous tick).
-                            onComplete(job.data);
+                            // App's routing reads marketingConfig (Pro+assistive),
+                            // not the job payload, so no need to thread data here.
+                            onComplete();
                         } else if (job.status === 'failed') {
                             clearInterval(pollTimer);
                             throw new Error(job.error || "AI Generation failed.");

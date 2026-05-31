@@ -19,6 +19,8 @@
   "startOver": "开始新菜品",
   "toast": {
     "copied": "文案已复制到剪贴板!",
-    "copiedFallback": "文案已复制!可以粘贴了。"
+    "copiedFallback": "文案已复制!可以粘贴了。",
+    "downloadFailed": "下载失败 — 请再试一次。",
+    "shareFailed": "分享失败 — 请再试一次。"
   }
 }
