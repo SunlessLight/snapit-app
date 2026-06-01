@@ -326,10 +326,18 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                                         <span className="font-bold text-gray-400">RM</span>
                                     </div>
                                     <input
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         placeholder="12.00"
                                         value={config.price || ""}
-                                        onChange={(e) => handleUpdate('price', e.target.value)}
+                                        onChange={(e) => {
+                                            // Keep only digits + a single decimal point. Using
+                                            // type="text" (not type="number") avoids the silent
+                                            // wheel-scroll / arrow-key value mutation that made a
+                                            // focused price jump (e.g. 9 → 7 on two scroll ticks).
+                                            const cleaned = e.target.value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
+                                            handleUpdate('price', cleaned);
+                                        }}
                                         className="w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-2xl focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] transition-all font-medium text-lg"
                                     />
                                 </div>

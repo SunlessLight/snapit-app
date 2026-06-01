@@ -25,11 +25,20 @@ import {
     Image as ImageIcon
 } from 'lucide-react';
 
+import { motion } from 'framer-motion';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../components/SegmentedControl';
+import { needsClaidEnhance } from '../utils/captureHeuristics';
+import { cropBlobToRect, getBlobDimensions } from '../utils/imageUtils';
+
+// Downsample size for the enhance-cost gate. Matches dashboard's photo-check
+// canvas — small enough to read pixels in <100ms, big enough for the blur/
+// exposure heuristics to be meaningful.
+const ENHANCE_ANALYSIS_SIZE = 512;
 
 const ASPECT_RATIOS = [
     { label: 'Free', value: undefined, icon: Maximize },
@@ -77,35 +86,48 @@ async function getCroppedImg(imageElement, cropConfig) {
     });
 }
 
+// Enhance-cost gate (budget §6a). Decode a File to downsampled ImageData and ask
+// the heuristics whether this photo actually needs Claid's paid enhance, or
+// whether a free local pass suffices. On any decode failure we resolve to
+// { needed: true } — i.e. fail OPEN to Claid, because a photo we couldn't read
+// is exactly the kind we shouldn't silently downgrade. Mirrors dashboard's
+// runPhotoCheck so the two cost gates read the same way.
+async function shouldUseClaidEnhance(file) {
+    try {
+        const url = URL.createObjectURL(file);
+        try {
+            const result = await new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const naturalDimensions = { width: img.naturalWidth, height: img.naturalHeight };
+                    const canvas = document.createElement('canvas');
+                    canvas.width = ENHANCE_ANALYSIS_SIZE;
+                    canvas.height = ENHANCE_ANALYSIS_SIZE;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    if (!ctx) return resolve({ needed: true, reasons: ['decode'] });
+                    ctx.drawImage(img, 0, 0, ENHANCE_ANALYSIS_SIZE, ENHANCE_ANALYSIS_SIZE);
+                    try {
+                        const imageData = ctx.getImageData(0, 0, ENHANCE_ANALYSIS_SIZE, ENHANCE_ANALYSIS_SIZE);
+                        resolve(needsClaidEnhance(imageData, naturalDimensions));
+                    } catch {
+                        resolve({ needed: true, reasons: ['decode'] });
+                    }
+                };
+                img.onerror = () => resolve({ needed: true, reasons: ['decode'] });
+                img.src = url;
+            });
+            return result;
+        } finally {
+            URL.revokeObjectURL(url);
+        }
+    } catch {
+        return { needed: true, reasons: ['decode'] };
+    }
+}
+
 // 1. Add this helper outside your component
 function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
     return centerCrop(makeAspectCrop({ unit: '%', width: 90 }, aspect, mediaWidth, mediaHeight), mediaWidth, mediaHeight);
-}
-
-// Crop a Blob to a rect already expressed in the blob's natural pixel coordinates.
-// Used to re-apply the user's composite crop to Claid's enhanced full-size response,
-// which comes back at the original image's dimensions. Different convention from
-// getCroppedImg (display-pixels + an HTMLImageElement) so kept as a separate helper.
-async function cropBlobToRect(blob, rect) {
-    const url = URL.createObjectURL(blob);
-    try {
-        const img = await new Promise((resolve, reject) => {
-            const el = new Image();
-            el.onload = () => resolve(el);
-            el.onerror = reject;
-            el.src = url;
-        });
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.floor(rect.width);
-        canvas.height = Math.floor(rect.height);
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
-        return await new Promise((resolve, reject) => {
-            canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas empty')), 'image/jpeg', 0.95);
-        });
-    } finally {
-        URL.revokeObjectURL(url);
-    }
 }
 
 export default function MediaEditorView({ mediaState, setMediaState, onNext, onPrev }) {
@@ -157,9 +179,13 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
     };
 
     // --- Actions ---
-    // Dummy slider-nudge: kept as the failure fallback so the button is never a dead end
-    // when Claid is unreachable. Same delta values as the pre-Phase-6 placeholder UX.
-    const applyDummyEnhance = () => {
+    // Free local enhance: a brightness/contrast/saturation nudge that gets baked
+    // into the final JPEG by ContextConfiguration.createProcessedBlob. Two callers:
+    // (1) the cost gate, when a photo is already good enough that Claid's paid
+    //     upscale/polish would add nothing — this is the credit-saving path;
+    // (2) the failure fallback, so the button is never a dead end when Claid is
+    //     unreachable. Caches prior slider values for the revert click.
+    const applyLocalEnhance = () => {
         setCachedValues({
             b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation,
             h: activeImg.hue, bl: activeImg.blur, sh: activeImg.sharpness, v: activeImg.vignette
@@ -198,13 +224,27 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
         // Enhance path. Requires originalFile (set on upload). Defensive guard for the
         // demo-image case where the user lands in step 2 without uploading anything.
         if (!activeImg.originalFile) {
-            applyDummyEnhance();
+            applyLocalEnhance();
             return;
         }
 
         setIsEnhancing(true);
         const controller = new AbortController();
         try {
+            // Cost gate (budget §6a). Only spend a Claid credit when the photo
+            // needs what Claid uniquely does (recover blur, upscale low-res,
+            // rescue severe exposure). A sharp, well-exposed, ≥1024px photo gets
+            // the free local enhance instead — same visible "enhanced" state, no
+            // credit burned. Fails open to Claid if the photo can't be decoded.
+            const { needed, reasons } = await shouldUseClaidEnhance(activeImg.originalFile);
+            if (!needed) {
+                console.info('Enhance: photo already good — local enhance, Claid skipped (saved 1 credit).');
+                applyLocalEnhance();
+                setIsEnhancing(false);
+                return;
+            }
+            console.info('Enhance: Claid needed —', reasons.join(', '));
+
             const formData = new FormData();
             formData.append('image', activeImg.originalFile);
 
@@ -219,9 +259,28 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
             }
 
             const claidBlob = await response.blob();
-            const finalBlob = activeImg.compositeCropRect
-                ? await cropBlobToRect(claidBlob, activeImg.compositeCropRect)
-                : claidBlob;
+            let finalBlob = claidBlob;
+            if (activeImg.compositeCropRect) {
+                // compositeCropRect is in the ORIGINAL upload's natural pixels, but
+                // Claid upscales its output (resizing 150%), so the enhanced blob is
+                // on a larger pixel grid. Rescale the rect by the enhanced/original
+                // dimension ratio so the crop lands in the same place it would have on
+                // the original. Without this the rect samples the top-left fraction of
+                // the bigger image — the "much bigger, only top-left corner" bug.
+                const [origDims, enhDims] = await Promise.all([
+                    getBlobDimensions(activeImg.originalFile),
+                    getBlobDimensions(claidBlob),
+                ]);
+                const sx = enhDims.width / origDims.width;
+                const sy = enhDims.height / origDims.height;
+                const scaledRect = {
+                    x: activeImg.compositeCropRect.x * sx,
+                    y: activeImg.compositeCropRect.y * sy,
+                    width: activeImg.compositeCropRect.width * sx,
+                    height: activeImg.compositeCropRect.height * sy,
+                };
+                finalBlob = await cropBlobToRect(claidBlob, scaledRect);
+            }
 
             const newUrl = URL.createObjectURL(finalBlob);
             setMediaState(prev => ({
@@ -238,9 +297,9 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
             }));
             setCachedValues(null);
         } catch (err) {
-            console.error('Claid enhance failed, falling back to dummy slider-nudge:', err);
+            console.error('Claid enhance failed, falling back to local slider-nudge:', err);
             alert(t('mediaEditor:enhance.failed'));
-            applyDummyEnhance();
+            applyLocalEnhance();
         } finally {
             setIsEnhancing(false);
         }
@@ -423,11 +482,34 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
                                         />
                                     )}
                                     {isEnhancing && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/10 rounded-md pointer-events-auto">
-                                            <Loader2 size={32} className="animate-spin text-white drop-shadow-lg" />
-                                            <span className="text-xs font-semibold uppercase tracking-wider text-white drop-shadow-lg">
-                                                {t('mediaEditor:enhance.loading')}
-                                            </span>
+                                        <div className="absolute inset-0 rounded-md overflow-hidden pointer-events-auto">
+                                            {/* Soft pastel sweep — same gradient + keyframes as the
+                                                Processing screen so both "AI working" moments read as
+                                                one system. bg-white/60 backing keeps the pastels true
+                                                over a busy photo. */}
+                                            <div className="absolute inset-0 bg-white/60" />
+                                            <motion.div
+                                                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+                                                transition={{ duration: 8, ease: "linear", repeat: Infinity }}
+                                                className="absolute inset-0 opacity-90"
+                                                style={{
+                                                    background: "linear-gradient(-45deg, #e0f2fe, #ede9fe, #ffedd5, #d1fae5, #fae8ff, #fff7ed)",
+                                                    backgroundSize: "300% 300%"
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                                                <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                                                    {t('mediaEditor:enhance.loading')}
+                                                </span>
+                                                {/* Thin shimmer bar, mirrors Processing's minimal loader */}
+                                                <div className="w-40 h-1 bg-gray-200/70 rounded-full overflow-hidden relative">
+                                                    <motion.div
+                                                        animate={{ x: ["-100%", "200%"] }}
+                                                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                                                        className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-gray-400/40 to-transparent rounded-full"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

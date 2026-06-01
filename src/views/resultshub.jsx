@@ -9,6 +9,7 @@ import {
     Sparkles
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { cropBlobToRect } from '../utils/imageUtils';
 
 // --- Sub-Component: Smart Content Card ---
 const ContentCard = ({ label, value, field, onUpdate }) => {
@@ -92,12 +93,40 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
     const captions = Array.isArray(aiOutput?.captions) ? aiOutput.captions : [];
     const platformLabel = (platform) => t(`common:platforms.${platform}`, platform);
 
-    // "before" must be originalUrl — url is overwritten by Claid's enhanced
-    // blob in handleAutoEnhance, so using it here would put the enhanced image
-    // on both sides of the slider when bg-swap is off.
-    const originalImgSrc = mediaState.originalUrl || mediaState.url;
-    const hasAiImage = Boolean(aiOutput?.generatedImageBase64);
+    // "before" = the user's composed input, framed to match the final. We start from
+    // the raw upload (originalUrl — NOT url, which Claid's enhance overwrites) and, if
+    // the user cropped, re-apply that crop so the before/after share one framing and
+    // only enhancement / adjustments / bg-swap read as a difference (no content jump
+    // while sliding). Deriving it from originalFile + compositeCropRect is exact; the
+    // raw upload is the fallback when there was no crop (or originalFile is gone after
+    // a reload).
+    const rawBeforeSrc = mediaState.originalUrl || mediaState.url;
+    const [croppedBeforeUrl, setCroppedBeforeUrl] = useState(null);
 
+    useEffect(() => {
+        let isMounted = true;
+        let madeUrl = null;
+        const { originalFile, compositeCropRect } = mediaState;
+        if (!compositeCropRect || !originalFile) {
+            setCroppedBeforeUrl(null);
+            return;
+        }
+        cropBlobToRect(originalFile, compositeCropRect)
+            .then((blob) => {
+                if (!isMounted) return;
+                madeUrl = URL.createObjectURL(blob);
+                setCroppedBeforeUrl(madeUrl);
+            })
+            .catch(() => { if (isMounted) setCroppedBeforeUrl(null); });
+        return () => {
+            isMounted = false;
+            if (madeUrl) URL.revokeObjectURL(madeUrl);
+        };
+    }, [mediaState.originalFile, mediaState.compositeCropRect]);
+
+    const beforeSrc = croppedBeforeUrl || rawBeforeSrc;
+
+    const hasAiImage = Boolean(aiOutput?.generatedImageBase64);
     let aiImgSrc = null;
     if (hasAiImage) {
         const hasDataPrefix = aiOutput.generatedImageBase64.startsWith('data:image');
@@ -106,10 +135,22 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
             : `data:image/jpeg;base64,${aiOutput.generatedImageBase64}`;
     }
 
-    // "Final" = whatever the user should compare against the raw upload.
-    // AI bg-swap output wins; otherwise the filter-baked JPEG; otherwise the raw itself.
-    const finalImgSrc = aiImgSrc || mediaState.processedUrl || originalImgSrc;
-    const showSlider = Boolean(finalImgSrc && originalImgSrc && finalImgSrc !== originalImgSrc);
+    // "after" = the fully-processed result. AI bg-swap output wins; otherwise the
+    // filter-baked JPEG; otherwise it falls back to the before (no processing yet).
+    const afterSrc = aiImgSrc || mediaState.processedUrl || beforeSrc;
+
+    // Did anything *visible* change? Crop is deliberately excluded — it now lives in
+    // both before and after (same framing), so a crop-only edit has nothing to
+    // compare and renders a single image. Enhancement, slider adjustments, and
+    // bg-swap are the real before/after diffs.
+    const slidersDifferFromDefault =
+        mediaState.brightness !== 50 || mediaState.contrast !== 50 || mediaState.saturation !== 50 ||
+        (mediaState.isMediaEditorPro && (
+            mediaState.hue !== 50 || mediaState.blur !== 0 ||
+            mediaState.sharpness !== 0 || mediaState.vignette !== 0
+        ));
+    const wasModified = hasAiImage || mediaState.isEnhanced || slidersDifferFromDefault;
+    const showSlider = Boolean(wasModified && afterSrc && beforeSrc);
 
     const handleUpdateText = (key, value) => {
         setAiOutput(prev => ({ ...prev, [key]: value }));
@@ -142,7 +183,7 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
             ? `${cleanName}_${finalSuffix}.png`
             : `${cleanName}_Original.png`;
 
-        const targetUrl = showingFinal ? finalImgSrc : originalImgSrc;
+        const targetUrl = showingFinal ? afterSrc : beforeSrc;
 
         if (!targetUrl) {
             showToast(t('toast.downloadFailed'));
@@ -167,7 +208,7 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
             .map((c) => `${platformLabel(c.platform)}:\n${c.noteTitle ? c.noteTitle + '\n' : ''}${c.body || ''}`)
             .join('\n\n');
         const combinedText = `${aiOutput.title}\n\n${aiOutput.description}\n\n${captionsText}`;
-        const targetShareUrl = finalImgSrc;
+        const targetShareUrl = afterSrc;
 
         try {
             const response = await fetch(targetShareUrl);
@@ -222,17 +263,16 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
 
                     {/* LEFT COLUMN: The Before/After Comparison Slider */}
                     <section className="w-full lg:w-1/2 flex flex-col gap-4 md:gap-5">
-                        <div className="relative w-full max-h-[500px] aspect-[4/5] md:aspect-square bg-white border border-gray-100 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm group">
+                        <div className="relative w-fit max-w-full mx-auto bg-white border border-gray-100 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm group">
 
-                            {originalImgSrc && (
-                                <div className="absolute inset-0 w-full h-full pointer-events-none">
-                                    <img
-                                        src={originalImgSrc}
-                                        alt="Original"
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
-                            )}
+                            {/* In-flow base image ("before"). It alone sizes the card, so the
+                                card can never collapse — even with no edits and no slider. */}
+                            <img
+                                src={beforeSrc}
+                                alt="Before"
+                                draggable={false}
+                                className="block max-h-[500px] w-auto max-w-full object-contain select-none"
+                            />
 
                             {showSlider && (
                                 <>
@@ -241,7 +281,7 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                                         style={{ clipPath: `inset(0 ${100 - sliderValue}% 0 0)` }}
                                     >
                                         <img
-                                            src={finalImgSrc}
+                                            src={afterSrc}
                                             alt={hasAiImage ? "AI Enhanced" : "Edited"}
                                             className="w-full h-full object-contain"
                                         />

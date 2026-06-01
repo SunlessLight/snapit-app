@@ -169,7 +169,7 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
     const dismissSoftWarnings = () => setPhotoCheckSoftWarnings([]);
 
     return (
-        <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-8 px-4 md:px-12">
+        <div className="min-h-full w-full bg-[#fff8f6] text-[#1a0f0d] font-sans flex flex-col md:py-4 px-4 md:px-12">
 
             <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0">
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowLeft, Camera, Check, Loader2, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,6 +23,9 @@ export default function MaskPreviewScreen({ mediaState, onLooksRight, onRetake, 
     const urlRef = useRef(null);
 
     const sourceImage = mediaState?.processedFile || mediaState?.file || mediaState?.originalFile;
+    // Displayable URL for the "before" layer of the reveal wipe — matches the
+    // file that was segmented above.
+    const originalUrl = mediaState?.processedUrl || mediaState?.url || mediaState?.originalUrl || null;
 
     useEffect(() => {
         if (!sourceImage) {
@@ -114,11 +118,28 @@ export default function MaskPreviewScreen({ mediaState, onLooksRight, onRetake, 
                                 <span className="text-xs text-gray-600 font-medium">{t('maskPreview:loading')}</span>
                             </div>
                         )}
+                        {/* Back layer: the isolated cutout (revealed by the wipe). */}
                         {cutoutUrl && !isLoading && (
                             <img
                                 src={cutoutUrl}
                                 alt={t('maskPreview:previewAlt')}
-                                className="w-full h-full object-contain"
+                                className="absolute inset-0 w-full h-full object-contain"
+                            />
+                        )}
+
+                        {/* Front layer: the original photo, wiped away right→left
+                            on a one-shot ~1.4s sweep to expose the cutout behind.
+                            clipPath insets the right edge inward (0% → 100%), so the
+                            boundary travels leftward and the original dissolves to
+                            reveal the isolated subject. Settles static, fully clipped. */}
+                        {cutoutUrl && !isLoading && originalUrl && (
+                            <motion.img
+                                src={originalUrl}
+                                alt="Original"
+                                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                                initial={{ clipPath: 'inset(0 0% 0 0)' }}
+                                animate={{ clipPath: 'inset(0 100% 0 0)' }}
+                                transition={{ duration: 1.4, ease: 'easeInOut', delay: 0.25 }}
                             />
                         )}
                     </div>
