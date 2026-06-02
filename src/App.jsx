@@ -84,6 +84,27 @@ const ALLOWED_PLATFORMS = new Set(['instagram', 'facebook', 'xiaohongshu', 'deli
 
 const MEDIA_STATE_STORAGE_KEY = 'snapit:mediaState';
 const MARKETING_CONFIG_STORAGE_KEY = 'snapit:marketingConfig';
+// Stall info (location/hours/contact) is a persistent vendor *profile*, not per-post
+// config. It lives under its own key so it survives `handleStartOver` (which wipes the
+// per-post marketingConfig) and any future reset/migration of that config. This is the
+// source of truth for the three fields; the copy inside marketingConfig is just the
+// working/submit value. Phase 7 will move this into real account settings.
+const STALL_PROFILE_STORAGE_KEY = 'snapit:stallProfile';
+
+const loadStallProfile = () => {
+  try {
+    const raw = localStorage.getItem(STALL_PROFILE_STORAGE_KEY);
+    if (!raw) return { location: '', hours: '', contact: '' };
+    const parsed = JSON.parse(raw);
+    return {
+      location: parsed.location || '',
+      hours: parsed.hours || '',
+      contact: parsed.contact || '',
+    };
+  } catch {
+    return { location: '', hours: '', contact: '' };
+  }
+};
 
 // Step numbers are looked up via STEP rather than hardcoded so any future
 // renumbering happens in one place.
@@ -181,6 +202,9 @@ export default function App() {
       tone: ALLOWED_TONES.has(stored.tone) ? stored.tone : 'casual',
       captionLength: ALLOWED_LENGTHS.has(stored.captionLength) ? stored.captionLength : 'short',
       platforms: storedPlatforms.length ? storedPlatforms : ['instagram'],
+      // Stall profile is authoritative for these three — spread it last so it wins over
+      // (and pre-fills) the per-post config, even on a fresh marketingConfig.
+      ...loadStallProfile(),
     };
   });
   const [aiOutput, setAiOutput] = useState(DEFAULT_AI_OUTPUT);
@@ -255,7 +279,11 @@ export default function App() {
       if (prev.preEnhanceUrl) URL.revokeObjectURL(prev.preEnhanceUrl);
       return DEFAULT_MEDIA_STATE;
     });
-    setMarketingConfig(DEFAULT_MARKETING_CONFIG);
+    // Reset per-post config but re-seed the persisted stall profile so the vendor's
+    // location/hours/contact carry over to the next post. The marketingConfig persist
+    // effect re-writes its (now stall-seeded) key right after; the stall profile key is
+    // intentionally left untouched.
+    setMarketingConfig({ ...DEFAULT_MARKETING_CONFIG, ...loadStallProfile() });
     setAiOutput(DEFAULT_AI_OUTPUT);
     setCurrentStep(STEP.DASHBOARD);
     try {
@@ -319,6 +347,21 @@ export default function App() {
       localStorage.setItem(MARKETING_CONFIG_STORAGE_KEY, JSON.stringify(marketingConfig));
     } catch { /* storage full or disabled */ }
   }, [marketingConfig]);
+
+  // Persist stall info to its own key so it survives Start Over (which clears the
+  // per-post marketingConfig). Tracks only the three profile fields.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STALL_PROFILE_STORAGE_KEY,
+        JSON.stringify({
+          location: marketingConfig.location || '',
+          hours: marketingConfig.hours || '',
+          contact: marketingConfig.contact || '',
+        })
+      );
+    } catch { /* storage full or disabled */ }
+  }, [marketingConfig.location, marketingConfig.hours, marketingConfig.contact]);
 
   // Sync appUILanguage to localStorage + i18next on every change
   useEffect(() => {
