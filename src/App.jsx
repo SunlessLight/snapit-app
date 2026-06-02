@@ -5,7 +5,6 @@ import WelcomeScreen from './views/welcomescreen'
 import DashboardView from './views/dashboard';
 import MediaEditorView from './views/mediaeditor';
 import ContextConfigurationView from './views/contextconfiguration';
-import MaskPreviewScreen from './views/maskpreviewscreen';
 import ProcessingScreen from './views/processingscreen';
 import ReviewScreen from './views/reviewscreen';
 import ResultsHubView from './views/resultshub';
@@ -86,17 +85,10 @@ const ALLOWED_PLATFORMS = new Set(['instagram', 'facebook', 'xiaohongshu', 'deli
 const MEDIA_STATE_STORAGE_KEY = 'snapit:mediaState';
 const MARKETING_CONFIG_STORAGE_KEY = 'snapit:marketingConfig';
 
-// Phase 6.7.5 — feature-flagged mask-preview step. When enabled, a new
-// checkpoint (step 4) sits between Context Config and Processing for bg-swap
-// flows, so users can bail on a bad cutout before the expensive /v2/edit call.
-// All step numbers are looked up via STEP rather than hardcoded so the
+// Step numbers are looked up via STEP rather than hardcoded so any future
 // renumbering happens in one place.
-const MASK_PREVIEW_ENABLED = import.meta.env.VITE_ENABLE_MASK_PREVIEW === 'true';
-
-const STEP = MASK_PREVIEW_ENABLED
-  ? { DASHBOARD: 1, EDITOR: 2, CONFIG: 3, MASK_PREVIEW: 4, PROCESSING: 5, REVIEW: 6, RESULTS: 7 }
-  : { DASHBOARD: 1, EDITOR: 2, CONFIG: 3, PROCESSING: 4, REVIEW: 5, RESULTS: 6 };
-const MAX_STEP = MASK_PREVIEW_ENABLED ? 7 : 6;
+const STEP = { DASHBOARD: 1, EDITOR: 2, CONFIG: 3, PROCESSING: 4, REVIEW: 5, RESULTS: 6 };
+const MAX_STEP = 6;
 
 // Strip non-serializable fields (File objects, blob: URLs) before persisting.
 // compositeCropRect is a plain object and persists fine; isEnhanced is dropped because
@@ -205,19 +197,11 @@ export default function App() {
   // ProcessingScreen calls this when the LLM job is done. Pro+assistive lands on
   // the Review screen; everyone else skips it and goes straight to Results Hub.
   // Routing decision lives here, not in ProcessingScreen, so the processing
-  // screen stays unaware of the assistive concept. The bad-cutout / human-in-
-  // frame case is handled earlier and visually at the mask-preview checkpoint
-  // (the vendor sees the cutout and decides), so there's no score-based gate.
+  // screen stays unaware of the assistive concept.
   const handleProcessingComplete = useCallback(() => {
     const goReview = !!marketingConfig.isContextPro && !!marketingConfig.assistiveMode;
     setCurrentStep(goReview ? STEP.REVIEW : STEP.RESULTS);
   }, [marketingConfig.isContextPro, marketingConfig.assistiveMode]);
-
-  // Phase 6.7.5 — MaskPreview "Retake" (cheap, pre-generation bail-out).
-  // No aiOutput to clear since we haven't generated anything yet.
-  const handleRetakeFromMaskPreview = useCallback(() => {
-    setCurrentStep(STEP.DASHBOARD);
-  }, []);
 
   // Navigate to LoginScreen from WelcomeScreen
   const handleShowLogin = useCallback(() => {
@@ -315,19 +299,10 @@ export default function App() {
     setCurrentStep(0);
   }, []);
 
-  // Phase 6.7.5 — MaskPreview "Looks right" advances to Processing. Lifted
-  // here (not nextStep) so the call site is explicit about what it's doing
-  // and we don't accidentally skip Processing if MAX_STEP ever changes.
-  const handleMaskPreviewAccept = useCallback(() => {
+  // Context Config advances straight to Processing.
+  const handleConfigNext = useCallback(() => {
     setCurrentStep(STEP.PROCESSING);
   }, []);
-
-  // The MaskPreview step is only reachable when the flag is on AND the user
-  // asked for a background swap. Skip it for the bg-off path.
-  const shouldShowMaskPreview = MASK_PREVIEW_ENABLED && !!marketingConfig.generateBackground;
-  const handleConfigNext = useCallback(() => {
-    setCurrentStep(shouldShowMaskPreview ? STEP.MASK_PREVIEW : STEP.PROCESSING);
-  }, [shouldShowMaskPreview]);
 
   // ========== PERSISTENCE ==========
   useEffect(() => {
@@ -410,8 +385,8 @@ export default function App() {
       return <WelcomeScreen onLogin={handleShowLogin} onSignUp={handleShowSignUp} />;
     }
 
-    // User is authenticated - show workflow. Step values come from STEP so the
-    // 6.7.5 mask-preview renumbering happens in one place.
+    // User is authenticated - show workflow. Step values come from STEP so any
+    // future renumbering happens in one place.
     switch (currentStep) {
       case 0:
         // This shouldn't happen (authenticated users skip to Dashboard), but keep as fallback
@@ -421,15 +396,7 @@ export default function App() {
       case STEP.EDITOR:
         return <MediaEditorView userName={userName} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
       case STEP.CONFIG:
-        // ContextConfig advances either to MaskPreview (when flag on + bg-swap on)
-        // or directly to Processing. handleConfigNext encapsulates that choice.
         return <ContextConfigurationView userName={userName} mediaState={mediaState} setMediaState={setMediaState} config={marketingConfig} setConfig={setMarketingConfig} onNext={handleConfigNext} onPrev={prevStep} />;
-      case STEP.MASK_PREVIEW:
-        // Only reachable when MASK_PREVIEW_ENABLED. Defensive fallback to
-        // Processing in case state lands here under an unexpected condition.
-        return MASK_PREVIEW_ENABLED
-          ? <MaskPreviewScreen mediaState={mediaState} onLooksRight={handleMaskPreviewAccept} onRetake={handleRetakeFromMaskPreview} onPrev={prevStep} />
-          : <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onPrev={prevStep} />;
       case STEP.PROCESSING:
         return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onPrev={prevStep} />;
       case STEP.REVIEW:
@@ -469,8 +436,6 @@ export default function App() {
             <DynamicTimeline
               currentStep={currentStep}
               showReview={!!marketingConfig.isContextPro && !!marketingConfig.assistiveMode}
-              showMaskPreviewDot={shouldShowMaskPreview}
-              useShiftedNumbering={MASK_PREVIEW_ENABLED}
             />
           </div>
         )}

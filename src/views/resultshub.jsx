@@ -84,8 +84,14 @@ const ContentCard = ({ label, value, field, onUpdate }) => {
 // --- Main View Component ---
 export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onStartOver }) {
     const { t } = useTranslation(['resultsHub', 'common']);
+    // Slider opens on the right (100 = original fully shown); a mount tween then
+    // sweeps it left to 0 (final shown). See the auto-slide effect below.
     const [sliderValue, setSliderValue] = useState(100);
     const [toastMessage, setToastMessage] = useState(null);
+    // Flipped true on the first manual drag so the auto-slide tween bails out
+    // immediately and hands control back to the user.
+    const userInteractedRef = useRef(false);
+    const autoSlideRafRef = useRef(null);
 
     // Per-platform captions: array of { platform, body, noteTitle? }. Guard
     // against a legacy single-caption shape just in case persisted/default
@@ -152,6 +158,32 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
     const wasModified = hasAiImage || mediaState.isEnhanced || slidersDifferFromDefault;
     const showSlider = Boolean(wasModified && afterSrc && beforeSrc);
 
+    // Auto-slide reveal on mount: start on the original (slider right, value 100)
+    // and sweep right→left to the final (value 0), so landing on Results Hub plays
+    // a "here's what we did" wipe. Gated on showSlider (nothing to reveal otherwise),
+    // cancelled the instant the user drags (userInteractedRef). Respects
+    // prefers-reduced-motion by jumping straight to the final with no movement.
+    useEffect(() => {
+        if (!showSlider) return;
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion) {
+            setSliderValue(0);
+            return;
+        }
+        const DURATION = 1200;
+        const easeOut = (p) => 1 - Math.pow(1 - p, 3);
+        let start = null;
+        const tick = (now) => {
+            if (userInteractedRef.current) return;
+            if (start === null) start = now;
+            const p = Math.min((now - start) / DURATION, 1);
+            setSliderValue(100 - easeOut(p) * 100);
+            if (p < 1) autoSlideRafRef.current = requestAnimationFrame(tick);
+        };
+        autoSlideRafRef.current = requestAnimationFrame(tick);
+        return () => { if (autoSlideRafRef.current) cancelAnimationFrame(autoSlideRafRef.current); };
+    }, [showSlider]);
+
     const handleUpdateText = (key, value) => {
         setAiOutput(prev => ({ ...prev, [key]: value }));
     };
@@ -172,7 +204,8 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
     };
 
     const handleDownload = async () => {
-        const showingFinal = showSlider ? sliderValue >= 50 : true;
+        // Final occupies the right portion now, so it dominates at LOW values.
+        const showingFinal = showSlider ? sliderValue <= 50 : true;
 
         const cleanName = aiOutput.title
             ? aiOutput.title.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')
@@ -276,9 +309,13 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
 
                             {showSlider && (
                                 <>
+                                    {/* The "after" (final) overlays the original on the RIGHT side
+                                        [sliderValue%, 100%] — clip the left. So at value=100 it's
+                                        fully hidden (original shown, handle right); dragging left
+                                        grows the final from the right, covering the original. */}
                                     <div
                                         className="absolute inset-0 w-full h-full bg-[#fff8f6] pointer-events-none"
-                                        style={{ clipPath: `inset(0 ${100 - sliderValue}% 0 0)` }}
+                                        style={{ clipPath: `inset(0 0 0 ${sliderValue}%)` }}
                                     >
                                         <img
                                             src={afterSrc}
@@ -290,7 +327,7 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                                         type="range"
                                         min="0" max="100"
                                         value={sliderValue}
-                                        onChange={(e) => setSliderValue(e.target.value)}
+                                        onChange={(e) => { userInteractedRef.current = true; setSliderValue(Number(e.target.value)); }}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
                                     />
 
@@ -303,11 +340,13 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                                         </div>
                                     </div>
 
+                                    {/* Left side is the original, right side the final (matches
+                                        the clip geometry above). */}
                                     <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                        {hasAiImage ? t('labels.aiEnhanced') : t('labels.edited')}
+                                        {t('labels.original')}
                                     </div>
                                     <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                        {t('labels.original')}
+                                        {hasAiImage ? t('labels.aiEnhanced') : t('labels.edited')}
                                     </div>
                                 </>
                             )}
@@ -317,14 +356,14 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
                         {/* The "Smart" Single Download Button - Context aware */}
                         <button
                             onClick={handleDownload}
-                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${showSlider && sliderValue >= 50
+                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${showSlider && sliderValue <= 50
                                 ? 'bg-[#dc2626] text-white hover:brightness-90 md:hover:-translate-y-1'
                                 : 'bg-white border-2 border-gray-200 text-[#1a0f0d] hover:border-gray-300'
                                 }`}
                         >
                             <Download size={18} />
                             {showSlider
-                                ? (sliderValue >= 50
+                                ? (sliderValue <= 50
                                     ? (hasAiImage ? t('download.enhanced') : t('download.edited'))
                                     : t('download.original'))
                                 : t('download.image')}
