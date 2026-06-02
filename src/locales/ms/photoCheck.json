@@ -1,0 +1,36 @@
+{
+  "chip": {
+    "summary": "Beberapa cadangan sebelum teruskan",
+    "dismissAlt": "Tutup cadangan"
+  },
+  "modal": {
+    "title": "Tip ringkas tentang gambar ini",
+    "subtitle": "Gambar yang lebih jelas biasanya beri hasil lebih baik — tapi terpulang pada anda. Guna yang ini, atau cuba lagi ikut tip di bawah."
+  },
+  "warnings": {
+    "severeBlur": "Gambar ini nampak kabur.",
+    "mildBlur": "Gambar ini agak kurang tajam.",
+    "severeDark": "Gambar ini nampak sangat gelap.",
+    "mildDark": "Gambar ini agak gelap.",
+    "severeBright": "Gambar ini nampak terlalu terang.",
+    "mildBright": "Gambar ini agak terang.",
+    "tooSmall": "Gambar ini agak kecil.",
+    "lowRes": "Gambar ini resolusi rendah.",
+    "oddAspect": "Gambar ini berbentuk luar biasa."
+  },
+  "tips": {
+    "severeBlur": "Tip: ketik makanan pada skrin untuk fokus, kemudian pegang stabil.",
+    "mildBlur": "Tip: ketik makanan pada skrin untuk fokus sebelum ambil gambar.",
+    "severeDark": "Tip: alih dekat tingkap atau pasang lampu lebih terang.",
+    "mildDark": "Tip: sedikit cahaya lagi akan buat hidangan menonjol.",
+    "severeBright": "Tip: elak silau terus atau cahaya matahari yang kuat.",
+    "mildBright": "Tip: lembutkan cahaya atau ubah sudut jauh dari silau.",
+    "tooSmall": "Tip: dekatkan ke hidangan dan guna kamera utama.",
+    "lowRes": "Tip: dekat sedikit supaya hidangan memenuhi bingkai.",
+    "oddAspect": "Tip: ambil betul-betul depan hidangan, penuhi sebahagian besar gambar."
+  },
+  "actions": {
+    "retake": "Ambil gambar lain",
+    "useThisPhoto": "Guna gambar ini"
+  }
+}

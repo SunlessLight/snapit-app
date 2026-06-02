@@ -1,0 +1,37 @@
+{
+  "header": {
+    "title": "Semak & Halusi",
+    "subtitle": "Ubah draf, kemudian hantar ke halaman hasil"
+  },
+  "bg": {
+    "heading": "Gambar Latar Belakang",
+    "previewAlt": "Pratonton latar belakang",
+    "loading": "Sedang menjana semula latar belakang…",
+    "changePromptLabel": "Apa yang nak diubah pada latar belakang?",
+    "changePromptPlaceholder": "cth., Cahaya lebih hangat dan tambah tumbuhan kabur di belakang",
+    "regenerateButton": "Jana Semula Latar Belakang"
+  },
+  "bgRegen": {
+    "modeLabel": "Mod jana semula",
+    "varyLabel": "Variasi baru",
+    "fixLabel": "Halusi yang ini",
+    "varyHint": "Pilih komposisi baru. Sesuai jika latar belakang sekarang tak menjadi.",
+    "fixHint": "Kekalkan komposisi. Sesuai untuk perubahan kecil ikut arahan."
+  },
+  "captions": {
+    "heading": "Tajuk, Penerangan & Kapsyen",
+    "subtitle": "Beritahu AI apa yang nak diubah di bawah. Teks akhir boleh disunting di skrin hasil.",
+    "titleLabel": "Tajuk",
+    "descriptionLabel": "Penerangan",
+    "captionLabel": "Kapsyen",
+    "changePromptLabel": "Apa yang nak diubah pada kapsyen?",
+    "changePromptPlaceholder": "cth., Buat kapsyen lebih pendek dan suka-suka, tambah soalan di hujung",
+    "regenerateButton": "Jana Semula Kapsyen"
+  },
+  "finaliseButton": "Sudah Cantik — Lihat Hasil",
+  "errors": {
+    "noImage": "Tiada gambar untuk dijana semula.",
+    "noBgPrompt": "Prompt latar belakang asal hilang — kembali untuk jana dahulu.",
+    "generic": "Ada masalah. Cuba lagi sebentar."
+  }
+}

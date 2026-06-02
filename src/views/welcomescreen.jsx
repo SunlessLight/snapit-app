@@ -1,59 +1,65 @@
-import React, { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import snapitLogo from '../assets/snapit-logo.png';
 
-export default function WelcomeScreen({ onStart }) {
-    const [userName, setUserName] = useState('');
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (userName.trim()) {
-            onStart(userName.trim());
-        }
-    };
+export default function WelcomeScreen({ onLogin, onSignUp }) {
+    const { t } = useTranslation('welcome');
 
     return (
         <section className="h-full flex items-center justify-center px-6 bg-[#fff8f6] text-[#1a0f0d] font-sans">
-            <div className="w-full max-w-md text-center animate-fade-in">
-
-                {/* Replaced Icon/Text with user's PNG Logo */}
-                <div className="flex justify-center mb-8">
+            <div className="w-full max-w-md text-center">
+                {/* Logo */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="flex justify-center mb-8"
+                >
                     <img
                         src={snapitLogo}
                         alt="SnapIT Logo"
                         className="h-24 w-auto object-contain"
                     />
-                </div>
+                </motion.div>
 
-                <p className="text-lg opacity-70 mb-2 font-medium">
-                    Snap  .  Generate  .  Sell
-                </p>
-                <p className="text-sm opacity-60 mb-10">
-                    Instant captions and posters for your food business
-                </p>
+                {/* Tagline */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                    <p className="text-lg opacity-70 mb-2 font-medium">
+                        {t('tagline')}
+                    </p>
+                    <p className="text-sm opacity-60 mb-10">
+                        {t('subtitle')}
+                    </p>
+                </motion.div>
 
-                <form onSubmit={handleSubmit} className="mb-6">
-                    <input
-                        type="text"
-                        maxLength="30"
-                        placeholder="What's your name?"
-                        value={userName}
-                        onChange={(e) => setUserName(e.target.value)}
-                        className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-white focus:outline-none focus:border-[#dc2626] focus:ring-1 focus:ring-[#dc2626] text-lg mb-4 font-serif transition-all"
-                        autoComplete="off"
-                        required
-                    />
+                {/* Buttons */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="space-y-3 mb-6"
+                >
                     <button
-                        type="submit"
-                        disabled={!userName.trim()}
-                        className="w-full px-6 py-4 rounded-2xl text-base font-semibold inline-flex items-center justify-center gap-2 bg-[#dc2626] text-white hover:brightness-90 hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(220,38,38,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
+                        onClick={onSignUp}
+                        className="w-full px-6 py-3.5 rounded-2xl text-base font-semibold bg-[#dc2626] text-white hover:brightness-90 transition-all hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(220,38,38,0.3)]"
                     >
-                        Let's go <ArrowRight size={18} />
+                        {t('signUp')}
                     </button>
-                </form>
+                    <button
+                        onClick={onLogin}
+                        className="w-full px-6 py-3.5 rounded-2xl text-base font-semibold bg-white text-[#dc2626] border border-gray-200 hover:bg-gray-50 transition-all hover:-translate-y-[1px]"
+                    >
+                        {t('login')}
+                    </button>
+                </motion.div>
 
                 <p className="text-xs opacity-40">
-                    No account needed · Everything stays private
+                    {t('footer')}
                 </p>
             </div>
         </section>

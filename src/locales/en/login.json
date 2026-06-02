@@ -1,0 +1,30 @@
+{
+  "subtitle": "Create stunning food marketing content in seconds",
+  "tabs": {
+    "login": "Login",
+    "register": "Register"
+  },
+  "fields": {
+    "username": "Username",
+    "usernamePlaceholder": "Your display name",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordHint": "Password must be at least 6 characters"
+  },
+  "submit": {
+    "login": "Login",
+    "register": "Create Account",
+    "loggingIn": "Logging In...",
+    "registering": "Creating Account..."
+  },
+  "toggle": {
+    "hasAccount": "Already have an account? ",
+    "noAccount": "Don't have an account? ",
+    "loginCta": "Login",
+    "registerCta": "Register"
+  },
+  "errors": {
+    "duplicate": "An account with this email may already exist. Try logging in instead."
+  }
+}

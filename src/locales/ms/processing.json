@@ -1,0 +1,14 @@
+{
+  "loadingTexts": [
+    "Memotong bahan-bahan data...",
+    "Menambah 'rempah' AI dan gaya lokal...",
+    "Menyiapkan poster digital anda...",
+    "Sentuhan terakhir..."
+  ],
+  "errors": {
+    "noFile": "Ralat Kritikal: Tiada fail gambar dijumpai.",
+    "network": "Ralat rangkaian yang tidak dijangka berlaku.",
+    "title": "Penjanaan Gagal",
+    "retry": "Kembali & Cuba Lagi"
+  }
+}

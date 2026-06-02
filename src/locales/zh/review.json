@@ -1,0 +1,37 @@
+{
+  "header": {
+    "title": "审阅与微调",
+    "subtitle": "调整草稿,然后送到成果页"
+  },
+  "bg": {
+    "heading": "背景图片",
+    "previewAlt": "背景预览",
+    "loading": "正在重新生成背景…",
+    "changePromptLabel": "想怎么改背景?",
+    "changePromptPlaceholder": "例如:光线再暖一些,后面加些模糊的绿植",
+    "regenerateButton": "重新生成背景"
+  },
+  "bgRegen": {
+    "modeLabel": "重新生成方式",
+    "varyLabel": "换个版本",
+    "fixLabel": "微调这版",
+    "varyHint": "重新生成一个新构图。如果现在的背景不对味就用这个。",
+    "fixHint": "保留当前构图,只按指令做小幅调整。"
+  },
+  "captions": {
+    "heading": "标题、描述与文案",
+    "subtitle": "在下方告诉 AI 要怎么改。最终文字可在成果页直接编辑。",
+    "titleLabel": "标题",
+    "descriptionLabel": "描述",
+    "captionLabel": "文案",
+    "changePromptLabel": "想怎么改文案?",
+    "changePromptPlaceholder": "例如:文案再短一点、再俏皮一点,结尾加个问句",
+    "regenerateButton": "重新生成文案"
+  },
+  "finaliseButton": "看起来不错 — 查看成果",
+  "errors": {
+    "noImage": "没有可重新生成的图片。",
+    "noBgPrompt": "缺少原本的背景提示词 — 请返回先生成一次。",
+    "generic": "出错了,请稍后再试。"
+  }
+}

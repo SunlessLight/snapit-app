@@ -1,0 +1,17 @@
+{
+  "next": "Seterusnya",
+  "back": "Kembali",
+  "cancel": "Batal",
+  "apply": "Teruskan",
+  "generate": "Jana",
+  "on": "BUKA",
+  "off": "TUTUP",
+  "guest": "Tetamu",
+  "platforms": {
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "xiaohongshu": "小红书 / RED",
+    "delivery": "Menu Grab / Panda",
+    "xiaohongshuTitle": "Tajuk Nota"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "header": {
+    "title": "The Details",
+    "subtitle": "Tell us what you're selling"
+  },
+  "dish": {
+    "heading": "What's the dish?",
+    "nameLabel": "Dish Name",
+    "namePlaceholder": "e.g., Nasi Lemak Ayam Goreng",
+    "priceLabel": "Price"
+  },
+  "language": {
+    "heading": "Caption Language"
+  },
+  "platforms": {
+    "heading": "Where will you post?",
+    "subtitle": "Pick one or more — we write each caption to fit how people actually post there.",
+    "options": {
+      "instagram": { "label": "Instagram", "desc": "Hook + hashtags" },
+      "facebook": { "label": "Facebook", "desc": "Chatty, community" },
+      "xiaohongshu": { "label": "小红书 / RED", "desc": "种草 note style" },
+      "delivery": { "label": "Grab / Panda", "desc": "Menu description" }
+    }
+  },
+  "stallInfo": {
+    "heading": "Your stall info",
+    "subtitle": "Optional. Fill once — we reuse it on every post.",
+    "locationLabel": "Location",
+    "locationPlaceholder": "e.g., Bangsar, KL",
+    "hoursLabel": "Operating hours",
+    "hoursPlaceholder": "e.g., 8am–3pm daily",
+    "contactLabel": "Contact / WhatsApp",
+    "contactPlaceholder": "e.g., 012-345 6789",
+    "hint": "Added to your social captions so customers know where, when, and how to order. The delivery menu skips this."
+  },
+  "pro": {
+    "heading": "Pro Context",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "e.g., Handmade pan-mee with anchovies sourced daily from Penang",
+    "toneLabel": "Caption Tone",
+    "tones": {
+      "casual": "Casual & Friendly",
+      "punchy": "Short & Punchy",
+      "polished": "Polished & Modern",
+      "playful": "Playful & Cheeky"
+    },
+    "lengthLabel": "Caption Length",
+    "lengths": {
+      "short": "Short",
+      "medium": "Medium",
+      "long": "Long"
+    }
+  },
+  "background": {
+    "heading": "Change Background",
+    "options": {
+      "kopitiam": { "label": "Kopitiam", "desc": "Classic marble table" },
+      "cafe": { "label": "Modern Cafe", "desc": "Warm wooden table" },
+      "street": { "label": "Street Food", "desc": "Night market vibes" },
+      "premium": { "label": "Premium", "desc": "Clean & elegant" }
+    },
+    "descriptionLabel": "Describe Your Background",
+    "descriptionPlaceholder": "e.g., warm afternoon light, weathered wood surface, soft shadows",
+    "descriptionHint": "Describe the mood and lighting — avoid listing props like cups, plates, or utensils."
+  },
+  "assistive": {
+    "heading": "Generation Mode",
+    "subtitle": "Auto-generate ships the result straight to you. Review lets you tweak the captions and image in-loop before finalising.",
+    "optionAuto": "Auto-Generate",
+    "optionReview": "Review Before Final"
+  }
+}

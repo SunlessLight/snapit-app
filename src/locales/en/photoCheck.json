@@ -1,0 +1,36 @@
+{
+  "chip": {
+    "summary": "A few tips before you continue",
+    "dismissAlt": "Dismiss tips"
+  },
+  "modal": {
+    "title": "A quick tip on this photo",
+    "subtitle": "A clearer photo usually gives a better result — but it's your call. Use this one, or try again with the tips below."
+  },
+  "warnings": {
+    "severeBlur": "This photo looks blurry.",
+    "mildBlur": "This photo looks a little soft.",
+    "severeDark": "This photo looks very dark.",
+    "mildDark": "This photo is a little dark.",
+    "severeBright": "This photo looks overexposed.",
+    "mildBright": "This photo is a little bright.",
+    "tooSmall": "This photo is quite small.",
+    "lowRes": "This photo is low resolution.",
+    "oddAspect": "This photo has an unusual shape."
+  },
+  "tips": {
+    "severeBlur": "Tip: tap the food on your screen to focus, then hold steady.",
+    "mildBlur": "Tip: tap the food on your screen to focus before snapping.",
+    "severeDark": "Tip: move near a window or switch on more light.",
+    "mildDark": "Tip: a bit more light will make the dish pop.",
+    "severeBright": "Tip: move out of direct glare or harsh sunlight.",
+    "mildBright": "Tip: soften the light or angle away from the glare.",
+    "tooSmall": "Tip: move closer to the dish and use your main camera.",
+    "lowRes": "Tip: get a little closer so the dish fills the frame.",
+    "oddAspect": "Tip: frame the dish square-on, filling most of the photo."
+  },
+  "actions": {
+    "retake": "Take another photo",
+    "useThisPhoto": "Use this photo"
+  }
+}

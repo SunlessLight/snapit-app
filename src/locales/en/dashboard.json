@@ -1,0 +1,24 @@
+{
+  "hero": {
+    "title": "Drop a Photo",
+    "subtitle": "We'll polish it and turn it into something worth sharing."
+  },
+  "dropZone": {
+    "processing": "Processing...",
+    "dragDesktop": "Drag & drop your photo",
+    "pressMobile": "Press to upload photo",
+    "browseHint": "or click to browse — JPG, PNG, WEBP",
+    "choosePhoto": "Choose Photo",
+    "privacyHint": "Your photo stays in your browser. Nothing is uploaded anywhere."
+  },
+  "actions": {
+    "edit": "Edit",
+    "takePhoto": "Take Photo"
+  },
+  "proTips": {
+    "1": "Find the Light: Shoot near a window!",
+    "2": "Focus: Tap your screen to lock focus.",
+    "3": "Avoid Shadows: Don't block the light.",
+    "4": "Plate nicely: Wipe the edges clean."
+  }
+}

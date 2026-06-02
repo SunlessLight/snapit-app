@@ -8,9 +8,11 @@ import {
     ChevronsLeftRight,
     Sparkles
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { cropBlobToRect } from '../utils/imageUtils';
 
-// --- Sub-Component: Smart Content Card (No changes here) ---
-const ContentCard = ({ label, value, field, onUpdate, isEN }) => {
+// --- Sub-Component: Smart Content Card ---
+const ContentCard = ({ label, value, field, onUpdate }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const textareaRef = useRef(null);
@@ -80,15 +82,58 @@ const ContentCard = ({ label, value, field, onUpdate, isEN }) => {
 };
 
 // --- Main View Component ---
-export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, setAiOutput, onStartOver }) {
-    const isEN = appUILanguage === "EN";
+export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onStartOver }) {
+    const { t } = useTranslation(['resultsHub', 'common']);
+    // Slider opens on the right (100 = original fully shown); a mount tween then
+    // sweeps it left to 0 (final shown). See the auto-slide effect below.
     const [sliderValue, setSliderValue] = useState(100);
     const [toastMessage, setToastMessage] = useState(null);
+    // Flipped true on the first manual drag so the auto-slide tween bails out
+    // immediately and hands control back to the user.
+    const userInteractedRef = useRef(false);
+    const autoSlideRafRef = useRef(null);
 
-    const originalImgSrc = mediaState.url;
+    // Per-platform captions: array of { platform, body, noteTitle? }. Guard
+    // against a legacy single-caption shape just in case persisted/default
+    // output predates the multi-platform change.
+    const captions = Array.isArray(aiOutput?.captions) ? aiOutput.captions : [];
+    const platformLabel = (platform) => t(`common:platforms.${platform}`, platform);
+
+    // "before" = the user's composed input, framed to match the final. We start from
+    // the raw upload (originalUrl — NOT url, which Claid's enhance overwrites) and, if
+    // the user cropped, re-apply that crop so the before/after share one framing and
+    // only enhancement / adjustments / bg-swap read as a difference (no content jump
+    // while sliding). Deriving it from originalFile + compositeCropRect is exact; the
+    // raw upload is the fallback when there was no crop (or originalFile is gone after
+    // a reload).
+    const rawBeforeSrc = mediaState.originalUrl || mediaState.url;
+    const [croppedBeforeUrl, setCroppedBeforeUrl] = useState(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        let madeUrl = null;
+        const { originalFile, compositeCropRect } = mediaState;
+        if (!compositeCropRect || !originalFile) {
+            setCroppedBeforeUrl(null);
+            return;
+        }
+        cropBlobToRect(originalFile, compositeCropRect)
+            .then((blob) => {
+                if (!isMounted) return;
+                madeUrl = URL.createObjectURL(blob);
+                setCroppedBeforeUrl(madeUrl);
+            })
+            .catch(() => { if (isMounted) setCroppedBeforeUrl(null); });
+        return () => {
+            isMounted = false;
+            if (madeUrl) URL.revokeObjectURL(madeUrl);
+        };
+    }, [mediaState.originalFile, mediaState.compositeCropRect]);
+
+    const beforeSrc = croppedBeforeUrl || rawBeforeSrc;
+
     const hasAiImage = Boolean(aiOutput?.generatedImageBase64);
     let aiImgSrc = null;
-
     if (hasAiImage) {
         const hasDataPrefix = aiOutput.generatedImageBase64.startsWith('data:image');
         aiImgSrc = hasDataPrefix
@@ -96,8 +141,61 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
             : `data:image/jpeg;base64,${aiOutput.generatedImageBase64}`;
     }
 
+    // "after" = the fully-processed result. AI bg-swap output wins; otherwise the
+    // filter-baked JPEG; otherwise it falls back to the before (no processing yet).
+    const afterSrc = aiImgSrc || mediaState.processedUrl || beforeSrc;
+
+    // Did anything *visible* change? Crop is deliberately excluded — it now lives in
+    // both before and after (same framing), so a crop-only edit has nothing to
+    // compare and renders a single image. Enhancement, slider adjustments, and
+    // bg-swap are the real before/after diffs.
+    const slidersDifferFromDefault =
+        mediaState.brightness !== 50 || mediaState.contrast !== 50 || mediaState.saturation !== 50 ||
+        (mediaState.isMediaEditorPro && (
+            mediaState.hue !== 50 || mediaState.blur !== 0 ||
+            mediaState.sharpness !== 0 || mediaState.vignette !== 0
+        ));
+    const wasModified = hasAiImage || mediaState.isEnhanced || slidersDifferFromDefault;
+    const showSlider = Boolean(wasModified && afterSrc && beforeSrc);
+
+    // Auto-slide reveal on mount: start on the original (slider right, value 100)
+    // and sweep right→left to the final (value 0), so landing on Results Hub plays
+    // a "here's what we did" wipe. Gated on showSlider (nothing to reveal otherwise),
+    // cancelled the instant the user drags (userInteractedRef). Respects
+    // prefers-reduced-motion by jumping straight to the final with no movement.
+    useEffect(() => {
+        if (!showSlider) return;
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion) {
+            setSliderValue(0);
+            return;
+        }
+        const DURATION = 1200;
+        const easeOut = (p) => 1 - Math.pow(1 - p, 3);
+        let start = null;
+        const tick = (now) => {
+            if (userInteractedRef.current) return;
+            if (start === null) start = now;
+            const p = Math.min((now - start) / DURATION, 1);
+            setSliderValue(100 - easeOut(p) * 100);
+            if (p < 1) autoSlideRafRef.current = requestAnimationFrame(tick);
+        };
+        autoSlideRafRef.current = requestAnimationFrame(tick);
+        return () => { if (autoSlideRafRef.current) cancelAnimationFrame(autoSlideRafRef.current); };
+    }, [showSlider]);
+
     const handleUpdateText = (key, value) => {
         setAiOutput(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Edit one platform caption in place. `key` is 'body' or 'noteTitle'.
+    const handleUpdateCaption = (index, key, value) => {
+        setAiOutput(prev => {
+            const next = Array.isArray(prev.captions) ? [...prev.captions] : [];
+            if (!next[index]) return prev;
+            next[index] = { ...next[index], [key]: value };
+            return { ...prev, captions: next };
+        });
     };
 
     const showToast = (msg) => {
@@ -106,31 +204,44 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
     };
 
     const handleDownload = async () => {
-        const isShowingAI = hasAiImage && sliderValue >= 50;
+        // Final occupies the right portion now, so it dominates at LOW values.
+        const showingFinal = showSlider ? sliderValue <= 50 : true;
 
         const cleanName = aiOutput.title
             ? aiOutput.title.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')
             : 'Dish';
 
-        const fileName = isShowingAI
-            ? `${cleanName}_SnapIT_AI.png`
+        const finalSuffix = hasAiImage ? 'SnapIT_AI' : 'SnapIT_Edit';
+        const fileName = showingFinal
+            ? `${cleanName}_${finalSuffix}.png`
             : `${cleanName}_Original.png`;
 
-        const targetUrl = isShowingAI ? aiImgSrc : mediaState.processedUrl;
+        const targetUrl = showingFinal ? afterSrc : beforeSrc;
 
-        if (!targetUrl) return;
+        if (!targetUrl) {
+            showToast(t('toast.downloadFailed'));
+            return;
+        }
 
-        const link = document.createElement('a');
-        link.href = targetUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            const link = document.createElement('a');
+            link.href = targetUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Error downloading:", error);
+            showToast(t('toast.downloadFailed'));
+        }
     };
 
     const handleGlobalShare = async () => {
-        const combinedText = `${aiOutput.title}\n\n${aiOutput.description}\n\n${aiOutput.caption}`;
-        const targetShareUrl = hasAiImage ? aiImgSrc : mediaState.processedUrl;
+        const captionsText = captions
+            .map((c) => `${platformLabel(c.platform)}:\n${c.noteTitle ? c.noteTitle + '\n' : ''}${c.body || ''}`)
+            .join('\n\n');
+        const combinedText = `${aiOutput.title}\n\n${aiOutput.description}\n\n${captionsText}`;
+        const targetShareUrl = afterSrc;
 
         try {
             const response = await fetch(targetShareUrl);
@@ -144,13 +255,19 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                     files: [file]
                 });
             } else {
-                navigator.clipboard.writeText(combinedText);
-                showToast(isEN ? "Text copied to clipboard!" : "Teks disalin ke papan keratan!");
+                await navigator.clipboard.writeText(combinedText);
+                showToast(t('toast.copied'));
             }
         } catch (error) {
+            // User dismissed the system share sheet — treat as no-op, not failure.
+            if (error.name === 'AbortError') return;
             console.error("Error sharing:", error);
-            navigator.clipboard.writeText(combinedText);
-            showToast(isEN ? "Copied text! Ready to paste." : "Teks disalin! Sedia untuk ditampal.");
+            try {
+                await navigator.clipboard.writeText(combinedText);
+                showToast(t('toast.copiedFallback'));
+            } catch {
+                showToast(t('toast.shareFailed'));
+            }
         }
     };
 
@@ -165,12 +282,12 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
             <div className="max-w-6xl mx-auto w-full flex flex-col flex-1 min-h-0 pb-48 md:pb-56">
 
-                <div className="text-center mb-4 md:mb-8 flex-shrink-0">
+                <div className="text-center pt-4 mb-4 md:mb-8 flex-shrink-0">
                     <h1 className="font-serif text-2xl md:text-4xl font-extrabold mb-1 md:mb-3 tracking-tight">
-                        {isEN ? "Your Marketing Assets" : "Aset Pemasaran Anda"}
+                        {t('heading')}
                     </h1>
                     <p className="opacity-70 text-sm md:text-base max-w-lg mx-auto">
-                        {isEN ? "Ready to copy, download, and share." : "Dah siap! Sedia untuk di-copy, muat turun, dan kongsi."}
+                        {t('subheading')}
                     </p>
                 </div>
 
@@ -179,31 +296,30 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
 
                     {/* LEFT COLUMN: The Before/After Comparison Slider */}
                     <section className="w-full lg:w-1/2 flex flex-col gap-4 md:gap-5">
-                        <div className="relative w-full max-h-[500px] aspect-[4/5] md:aspect-square bg-white border border-gray-100 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm group">
+                        <div className="relative w-fit max-w-full mx-auto bg-white border border-gray-100 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm group">
 
-                            {originalImgSrc && (
-                                <div className="absolute inset-0 w-full h-full pointer-events-none">
-                                    <img
-                                        src={originalImgSrc}
-                                        alt="Original"
-                                        className="w-full h-full object-contain"
-                                        style={{
-                                            // Vislual filter only - not saved to the image file itself
-                                            filter: `brightness(${mediaState.brightness * 2}%) contrast(${mediaState.contrast * 2}%) saturate(${mediaState.saturation * 2}%)`
-                                        }}
-                                    />
-                                </div>
-                            )}
+                            {/* In-flow base image ("before"). It alone sizes the card, so the
+                                card can never collapse — even with no edits and no slider. */}
+                            <img
+                                src={beforeSrc}
+                                alt="Before"
+                                draggable={false}
+                                className="block max-h-[500px] w-auto max-w-full object-contain select-none"
+                            />
 
-                            {hasAiImage && (
+                            {showSlider && (
                                 <>
+                                    {/* The "after" (final) overlays the original on the RIGHT side
+                                        [sliderValue%, 100%] — clip the left. So at value=100 it's
+                                        fully hidden (original shown, handle right); dragging left
+                                        grows the final from the right, covering the original. */}
                                     <div
                                         className="absolute inset-0 w-full h-full bg-[#fff8f6] pointer-events-none"
-                                        style={{ clipPath: `inset(0 ${100 - sliderValue}% 0 0)` }}
+                                        style={{ clipPath: `inset(0 0 0 ${sliderValue}%)` }}
                                     >
                                         <img
-                                            src={aiImgSrc}
-                                            alt="AI Enhanced"
+                                            src={afterSrc}
+                                            alt={hasAiImage ? "AI Enhanced" : "Edited"}
                                             className="w-full h-full object-contain"
                                         />
                                     </div>
@@ -211,7 +327,7 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                                         type="range"
                                         min="0" max="100"
                                         value={sliderValue}
-                                        onChange={(e) => setSliderValue(e.target.value)}
+                                        onChange={(e) => { userInteractedRef.current = true; setSliderValue(Number(e.target.value)); }}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
                                     />
 
@@ -224,11 +340,13 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                                         </div>
                                     </div>
 
+                                    {/* Left side is the original, right side the final (matches
+                                        the clip geometry above). */}
                                     <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                        {isEN ? "AI Enhanced" : "Hasil Sentuhan AI"}
+                                        {t('labels.original')}
                                     </div>
                                     <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-md font-medium pointer-events-none opacity-100 group-hover:opacity-0 transition-opacity">
-                                        {isEN ? "Original" : "Asal"}
+                                        {hasAiImage ? t('labels.aiEnhanced') : t('labels.edited')}
                                     </div>
                                 </>
                             )}
@@ -238,45 +356,52 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                         {/* The "Smart" Single Download Button - Context aware */}
                         <button
                             onClick={handleDownload}
-                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${hasAiImage && sliderValue >= 50
+                            className={`w-full flex items-center justify-center gap-2 text-sm md:text-lg py-3 md:py-3.5 rounded-full font-semibold transition-all duration-300 shadow-sm ${showSlider && sliderValue <= 50
                                 ? 'bg-[#dc2626] text-white hover:brightness-90 md:hover:-translate-y-1'
                                 : 'bg-white border-2 border-gray-200 text-[#1a0f0d] hover:border-gray-300'
                                 }`}
                         >
                             <Download size={18} />
-                            {hasAiImage ?
-                                (sliderValue >= 50
-                                    ? (isEN ? "Download Enhanced Image" : "Muat Turun Gambar AI")
-                                    : (isEN ? "Download Original Edit" : "Muat Turun Gambar Asal")
-                                )
-                                : (isEN ? "Download Image" : "Muat Turun Gambar")
-                            }
+                            {showSlider
+                                ? (sliderValue <= 50
+                                    ? (hasAiImage ? t('download.enhanced') : t('download.edited'))
+                                    : t('download.original'))
+                                : t('download.image')}
                         </button>
                     </section>
 
                     {/* RIGHT COLUMN: Editable Content Cards */}
                     <section className="w-full lg:w-1/2 space-y-3 md:space-y-4">
                         <ContentCard
-                            label={isEN ? "Catchy Title" : "Tajuk Menarik"}
+                            label={t('labels.title')}
                             value={aiOutput.title}
                             field="title"
                             onUpdate={handleUpdateText}
-                            isEN={isEN}
                         />
                         <ContentCard
-                            label={isEN ? "Description" : "Penerangan"}
+                            label={t('labels.description')}
                             value={aiOutput.description}
                             field="description"
                             onUpdate={handleUpdateText}
-                            isEN={isEN}
                         />
-                        <ContentCard
-                            label={isEN ? "Social Caption + Tags" : "Kapsyen Sosial + Tags"}
-                            value={aiOutput.caption}
-                            field="caption"
-                            onUpdate={handleUpdateText}
-                            isEN={isEN}
-                        />
+                        {captions.map((c, idx) => (
+                            <React.Fragment key={c.platform || idx}>
+                                {c.noteTitle !== undefined && (
+                                    <ContentCard
+                                        label={`${platformLabel(c.platform)} · ${t('common:platforms.xiaohongshuTitle', 'Title')}`}
+                                        value={c.noteTitle}
+                                        field="noteTitle"
+                                        onUpdate={(_, val) => handleUpdateCaption(idx, 'noteTitle', val)}
+                                    />
+                                )}
+                                <ContentCard
+                                    label={platformLabel(c.platform)}
+                                    value={c.body}
+                                    field="body"
+                                    onUpdate={(_, val) => handleUpdateCaption(idx, 'body', val)}
+                                />
+                            </React.Fragment>
+                        ))}
                     </section>
                 </div>
 
@@ -286,16 +411,15 @@ export default function ResultsHubView({ appUILanguage, mediaState, aiOutput, se
                         className="w-full sm:flex-1 bg-[#dc2626] hover:bg-black text-white text-sm md:text-lg font-semibold py-3 md:py-3.5 rounded-full shadow-lg flex items-center justify-center gap-2 md:gap-3 transition-transform active:scale-[0.98]"
                     >
                         <Share2 size={20} />
-                        {isEN ? "Share to Social Media" : "Kongsi ke Media Sosial"}
+                        {t('share')}
                     </button>
 
                     <button
                         onClick={onStartOver}
-                        // Added border, rounded corners, and hover states here
                         className="w-full sm:w-auto bg-white border-2 border-gray-200 text-[#1a0f0d] hover:border-gray-300 hover:bg-gray-50 text-sm md:text-base font-semibold py-3 md:py-3.5 px-6 rounded-full flex items-center justify-center gap-2 transition-all"
                     >
                         <Sparkles size={16} />
-                        {isEN ? "Start New Dish" : "Muat Hidangan Baru"}
+                        {t('startOver')}
                     </button>
                 </div>
             </div>

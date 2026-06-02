@@ -1,0 +1,24 @@
+{
+  "hero": {
+    "title": "Muat Naik Gambar",
+    "subtitle": "Biar kami cantikkan gambar ni, sedia untuk dikongsi."
+  },
+  "dropZone": {
+    "processing": "Memproses...",
+    "dragDesktop": "Tarik & letak gambar anda",
+    "pressMobile": "Tekan untuk muat naik gambar",
+    "browseHint": "atau klik untuk pilih gambar — JPG, PNG, WEBP",
+    "choosePhoto": "Pilih Gambar",
+    "privacyHint": "Gambar diproses terus dalam browser anda. Tiada apa yang dimuat naik ke Internet."
+  },
+  "actions": {
+    "edit": "Sunting",
+    "takePhoto": "Ambil Gambar"
+  },
+  "proTips": {
+    "1": "Cari Cahaya: Rakam berhampiran tingkap!",
+    "2": "Fokus: Sentuh skrin untuk kunci fokus.",
+    "3": "Elak Bayang: Jangan halang cahaya.",
+    "4": "Hias pinggan: Lap tepi pinggan supaya bersih."
+  }
+}

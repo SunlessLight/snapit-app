@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const LOADING_TEXTS = {
-    EN: ["Chopping up the data...", "Adding some Malaglish spice...", "Plating your digital poster...", "Applying final touches..."],
-    MY: ["Memotong bahan-bahan data...", "Menambah 'rempah' AI dan gaya lokal...", "Menyiapkan poster digital anda...", "Sentuhan terakhir..."]
-};
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function ProcessingScreen({
-    appUILanguage,
     mediaState,
     marketingConfig,
     setAiOutput,
     onComplete,
     onPrev
 }) {
+    const { t } = useTranslation('processing');
     const [currentIndex, setCurrentIndex] = useState(0);
     const [error, setError] = useState(null);
 
-    const isEN = appUILanguage === "EN";
-    const currentTexts = isEN ? LOADING_TEXTS.EN : LOADING_TEXTS.MY;
+    const currentTexts = t('loadingTexts', { returnObjects: true });
 
     const selectedFile = mediaState.processedFile || mediaState.file || null;
     const dishName = marketingConfig?.dishName || "";
@@ -29,6 +24,18 @@ export default function ProcessingScreen({
     const outputLanguage = marketingConfig?.outputLanguage || "";
     const backgroundVibe = marketingConfig?.backgroundVibe || "";
     const generateBackground = marketingConfig?.generateBackground ?? true;
+    const isMediaEditorPro = !!mediaState?.isMediaEditorPro;
+    const isContextPro = !!marketingConfig?.isContextPro;
+    const description = marketingConfig?.description || "";
+    const tone = marketingConfig?.tone || "casual";
+    const captionLength = marketingConfig?.captionLength || "short";
+    const backgroundDescription = marketingConfig?.backgroundDescription || "";
+    const platforms = Array.isArray(marketingConfig?.platforms) && marketingConfig.platforms.length
+        ? marketingConfig.platforms
+        : ["instagram"];
+    const location = marketingConfig?.location || "";
+    const hours = marketingConfig?.hours || "";
+    const contact = marketingConfig?.contact || "";
 
     console.log("Current File:", mediaState.file)
 
@@ -54,12 +61,13 @@ export default function ProcessingScreen({
     useEffect(() => {
         let isMounted = true;
         let pollTimer = null;
+        const abortController = new AbortController();
         setError(null);
 
         const generateProAssets = async () => {
             try {
                 if (!selectedFile) {
-                    throw new Error(isEN ? "Critical Error: No image payload found." : "Ralat Kritikal: Tiada fail gambar dijumpai.");
+                    throw new Error(t('errors.noFile'));
                 }
 
                 // Prepare Data
@@ -70,11 +78,22 @@ export default function ProcessingScreen({
                 formData.append('outputLanguage', outputLanguage);
                 formData.append('backgroundVibe', backgroundVibe);
                 formData.append('generateBackground', generateBackground);
+                formData.append('isMediaEditorPro', isMediaEditorPro);
+                formData.append('isContextPro', isContextPro);
+                formData.append('description', description);
+                formData.append('tone', tone);
+                formData.append('captionLength', captionLength);
+                formData.append('backgroundDescription', backgroundDescription);
+                formData.append('platforms', platforms.join(','));
+                formData.append('location', location);
+                formData.append('hours', hours);
+                formData.append('contact', contact);
 
                 // STEP 1: Initial POST to start the job
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {
                     method: 'POST',
                     body: formData,
+                    signal: abortController.signal,
                 });
 
                 if (!response.ok) {
@@ -83,21 +102,34 @@ export default function ProcessingScreen({
                 }
 
                 const { jobId } = await response.json();
+                if (!isMounted) return;
 
                 // STEP 2: Start Polling the status endpoint
                 pollTimer = setInterval(async () => {
+                    if (!isMounted) {
+                        clearInterval(pollTimer);
+                        return;
+                    }
                     try {
-                        const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
+                        const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`, {
+                            signal: abortController.signal,
+                        });
 
+                        if (statusRes.status === 404) {
+                            clearInterval(pollTimer);
+                            if (isMounted) setError(t('errors.network'));
+                            return;
+                        }
                         if (!statusRes.ok) throw new Error("Failed to check job status.");
 
                         const job = await statusRes.json();
-
                         if (!isMounted) return;
 
                         if (job.status === 'completed') {
                             clearInterval(pollTimer);
                             setAiOutput(job.data);
+                            // App's routing reads marketingConfig (Pro+assistive),
+                            // not the job payload, so no need to thread data here.
                             onComplete();
                         } else if (job.status === 'failed') {
                             clearInterval(pollTimer);
@@ -105,6 +137,7 @@ export default function ProcessingScreen({
                         }
                         // If status is 'processing', it just waits for the next 3s interval
                     } catch (pollErr) {
+                        if (pollErr.name === 'AbortError') return;
                         if (isMounted) {
                             clearInterval(pollTimer);
                             setError(pollErr.message);
@@ -113,9 +146,10 @@ export default function ProcessingScreen({
                 }, 3000); // Poll every 3 seconds
 
             } catch (err) {
+                if (err.name === 'AbortError') return;
                 if (!isMounted) return;
                 console.error("API Error:", err);
-                setError(err.message || (isEN ? "An unexpected network error occurred." : "Ralat rangkaian yang tidak dijangka berlaku."));
+                setError(err.message || t('errors.network'));
             }
         };
 
@@ -124,8 +158,9 @@ export default function ProcessingScreen({
         return () => {
             isMounted = false;
             if (pollTimer) clearInterval(pollTimer);
+            abortController.abort();
         };
-    }, [selectedFile, dishName, price, outputLanguage, backgroundVibe, isEN, setAiOutput, onComplete]);
+    }, [selectedFile, dishName, price, outputLanguage, backgroundVibe, setAiOutput, onComplete, t]);
 
 
     // 3. Error State UI
@@ -138,13 +173,13 @@ export default function ProcessingScreen({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-serif font-bold text-gray-900 mb-2">{isEN ? "Generation Failed" : "Penjanaan Gagal"}</h2>
+                    <h2 className="text-xl font-serif font-bold text-gray-900 mb-2">{t('errors.title')}</h2>
                     <p className="text-sm text-gray-500 mb-8">{error}</p>
                     <button
                         onClick={onPrev}
                         className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3.5 px-6 rounded-2xl transition-colors text-sm"
                     >
-                        {isEN ? "Go Back & Try Again" : "Kembali & Cuba Lagi"}
+                        {t('errors.retry')}
                     </button>
                 </div>
             </div>

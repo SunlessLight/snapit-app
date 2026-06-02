@@ -1,0 +1,30 @@
+{
+  "subtitle": "Cipta kandungan pemasaran makanan yang menarik dalam beberapa saat",
+  "tabs": {
+    "login": "Log Masuk",
+    "register": "Daftar"
+  },
+  "fields": {
+    "username": "Nama Pengguna",
+    "usernamePlaceholder": "Nama paparan anda",
+    "email": "E-mel",
+    "emailPlaceholder": "your@email.com",
+    "password": "Kata Laluan",
+    "passwordHint": "Kata laluan mesti sekurang-kurangnya 6 aksara"
+  },
+  "submit": {
+    "login": "Log Masuk",
+    "register": "Cipta Akaun",
+    "loggingIn": "Sedang Log Masuk...",
+    "registering": "Sedang Mencipta Akaun..."
+  },
+  "toggle": {
+    "hasAccount": "Sudah ada akaun? ",
+    "noAccount": "Belum ada akaun? ",
+    "loginCta": "Log Masuk",
+    "registerCta": "Daftar"
+  },
+  "errors": {
+    "duplicate": "Akaun dengan e-mel ini mungkin sudah wujud. Cuba log masuk."
+  }
+}

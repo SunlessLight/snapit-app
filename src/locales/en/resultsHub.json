@@ -1,0 +1,26 @@
+{
+  "heading": "Your Marketing Assets",
+  "subheading": "Ready to copy, download, and share.",
+  "labels": {
+    "aiEnhanced": "AI Enhanced",
+    "edited": "Your Edit",
+    "original": "Original",
+    "title": "Catchy Title",
+    "description": "Description",
+    "caption": "Social Caption + Tags"
+  },
+  "download": {
+    "enhanced": "Download AI Image",
+    "edited": "Download Edit",
+    "original": "Download Original",
+    "image": "Download Image"
+  },
+  "share": "Share to Social Media",
+  "startOver": "Start New Dish",
+  "toast": {
+    "copied": "Text copied to clipboard!",
+    "copiedFallback": "Copied text! Ready to paste.",
+    "downloadFailed": "Couldn't download — try again.",
+    "shareFailed": "Couldn't share — try again."
+  }
+}

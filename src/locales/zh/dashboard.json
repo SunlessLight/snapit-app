@@ -1,0 +1,24 @@
+{
+  "hero": {
+    "title": "上传照片",
+    "subtitle": "我们帮你修图,变成值得分享的作品。"
+  },
+  "dropZone": {
+    "processing": "处理中...",
+    "dragDesktop": "拖放你的照片到这里",
+    "pressMobile": "点击上传照片",
+    "browseHint": "或点击选择文件 — JPG、PNG、WEBP",
+    "choosePhoto": "选择照片",
+    "privacyHint": "你的照片只留在浏览器里,不会上传到任何地方。"
+  },
+  "actions": {
+    "edit": "编辑",
+    "takePhoto": "拍照"
+  },
+  "proTips": {
+    "1": "找好光线:靠近窗口拍摄!",
+    "2": "对焦:点击屏幕锁定焦点。",
+    "3": "避开阴影:别挡住光源。",
+    "4": "摆盘讲究:把盘边擦干净。"
+  }
+}

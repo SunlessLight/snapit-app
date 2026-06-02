@@ -1,0 +1,26 @@
+{
+  "hero": "Let's make it pop.",
+  "actions": {
+    "aiEnhance": "AI Enhance",
+    "crop": "Crop",
+    "adjust": "Adjust",
+    "resetTitle": "Reset edits"
+  },
+  "sliders": {
+    "brightness": "Brightness",
+    "contrast": "Contrast",
+    "saturation": "Saturation",
+    "hue": "Hue",
+    "blur": "Blur",
+    "sharpness": "Sharpness",
+    "vignette": "Vignette"
+  },
+  "proLabel": "Pro",
+  "crop": {
+    "applyFailed": "Failed to apply crop."
+  },
+  "enhance": {
+    "loading": "Enhancing...",
+    "failed": "AI enhance failed. Applied a basic touch-up instead."
+  }
+}

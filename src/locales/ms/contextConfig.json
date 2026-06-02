@@ -1,0 +1,72 @@
+{
+  "header": {
+    "title": "Butiran",
+    "subtitle": "Kongsi sikit apa yang anda jual"
+  },
+  "dish": {
+    "heading": "Nama Hidangan?",
+    "nameLabel": "Nama Makanan",
+    "namePlaceholder": "cth., Nasi Lemak Ayam Goreng",
+    "priceLabel": "Harga"
+  },
+  "language": {
+    "heading": "Bahasa Kapsyen"
+  },
+  "platforms": {
+    "heading": "Nak post kat mana?",
+    "subtitle": "Pilih satu atau lebih — kami tulis setiap kapsyen ikut gaya sebenar platform itu.",
+    "options": {
+      "instagram": { "label": "Instagram", "desc": "Hook + hashtag" },
+      "facebook": { "label": "Facebook", "desc": "Santai, komuniti" },
+      "xiaohongshu": { "label": "小红书 / RED", "desc": "Gaya nota 种草" },
+      "delivery": { "label": "Grab / Panda", "desc": "Penerangan menu" }
+    }
+  },
+  "stallInfo": {
+    "heading": "Info gerai anda",
+    "subtitle": "Pilihan. Isi sekali — kami guna semula pada setiap post.",
+    "locationLabel": "Lokasi",
+    "locationPlaceholder": "cth., Bangsar, KL",
+    "hoursLabel": "Waktu operasi",
+    "hoursPlaceholder": "cth., 8 pagi–3 petang setiap hari",
+    "contactLabel": "Hubungi / WhatsApp",
+    "contactPlaceholder": "cth., 012-345 6789",
+    "hint": "Dimasukkan ke dalam kapsyen sosial supaya pelanggan tahu di mana, bila dan cara order. Menu penghantaran tidak guna ini."
+  },
+  "pro": {
+    "heading": "Konteks Pro",
+    "descriptionLabel": "Penerangan",
+    "descriptionPlaceholder": "cth., Mee tarik dengan ikan bilis dari Penang setiap hari",
+    "toneLabel": "Nada Kapsyen",
+    "tones": {
+      "casual": "Santai & Mesra",
+      "punchy": "Padat & Tegas",
+      "polished": "Kemas & Moden",
+      "playful": "Suka-suka"
+    },
+    "lengthLabel": "Panjang Kapsyen",
+    "lengths": {
+      "short": "Pendek",
+      "medium": "Sederhana",
+      "long": "Panjang"
+    }
+  },
+  "background": {
+    "heading": "Tukar Latar Belakang",
+    "options": {
+      "kopitiam": { "label": "Kopitiam", "desc": "Meja marmar klasik" },
+      "cafe": { "label": "Kafe Moden", "desc": "Meja kayu & terang" },
+      "street": { "label": "Pasar Malam", "desc": "Suasana pasar malam" },
+      "premium": { "label": "Premium", "desc": "Bersih & eksklusif" }
+    },
+    "descriptionLabel": "Huraikan Latar Belakang Anda",
+    "descriptionPlaceholder": "cth., cahaya petang yang hangat, permukaan kayu lama, bayang-bayang lembut",
+    "descriptionHint": "Huraikan mood dan pencahayaan — elak senaraikan props seperti cawan, pinggan, atau peralatan."
+  },
+  "assistive": {
+    "heading": "Mod Penjanaan",
+    "subtitle": "Auto-Jana hantar hasil terus kepada anda. Semak biarkan anda ubah kapsyen dan gambar dalam lup sebelum muktamad.",
+    "optionAuto": "Auto-Jana",
+    "optionReview": "Semak Dahulu"
+  }
+}

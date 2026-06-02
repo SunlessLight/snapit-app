@@ -1,0 +1,72 @@
+{
+  "header": {
+    "title": "填写详情",
+    "subtitle": "告诉我们你卖什么"
+  },
+  "dish": {
+    "heading": "什么菜?",
+    "nameLabel": "菜品名称",
+    "namePlaceholder": "例如:椰浆饭炸鸡",
+    "priceLabel": "价格"
+  },
+  "language": {
+    "heading": "文案语言"
+  },
+  "platforms": {
+    "heading": "你要发到哪里?",
+    "subtitle": "可多选 — 我们会按各平台的真实发文风格分别撰写文案。",
+    "options": {
+      "instagram": { "label": "Instagram", "desc": "钩子 + 标签" },
+      "facebook": { "label": "Facebook", "desc": "亲切、社群感" },
+      "xiaohongshu": { "label": "小红书", "desc": "种草笔记风" },
+      "delivery": { "label": "Grab / Panda", "desc": "菜单描述" }
+    }
+  },
+  "stallInfo": {
+    "heading": "你的摊位资料",
+    "subtitle": "选填。填一次 — 每次发文都会自动带上。",
+    "locationLabel": "地点",
+    "locationPlaceholder": "例如:吉隆坡 Bangsar",
+    "hoursLabel": "营业时间",
+    "hoursPlaceholder": "例如:每天 早上8点–下午3点",
+    "contactLabel": "联系方式 / WhatsApp",
+    "contactPlaceholder": "例如:012-345 6789",
+    "hint": "会加进社交文案,让顾客知道在哪、几点、怎么点。外卖菜单不会带上这些。"
+  },
+  "pro": {
+    "heading": "Pro 上下文",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "例如:手工板面,槟城每日直送江鱼仔",
+    "toneLabel": "文案语气",
+    "tones": {
+      "casual": "随意亲切",
+      "punchy": "简短利落",
+      "polished": "精致现代",
+      "playful": "俏皮逗趣"
+    },
+    "lengthLabel": "文案长度",
+    "lengths": {
+      "short": "短",
+      "medium": "中",
+      "long": "长"
+    }
+  },
+  "background": {
+    "heading": "更换背景",
+    "options": {
+      "kopitiam": { "label": "茶餐室", "desc": "经典大理石桌" },
+      "cafe": { "label": "现代咖啡馆", "desc": "温暖木质桌面" },
+      "street": { "label": "街头小食", "desc": "夜市氛围" },
+      "premium": { "label": "高端", "desc": "干净优雅" }
+    },
+    "descriptionLabel": "自定义背景描述",
+    "descriptionPlaceholder": "例如:午后暖光,旧木桌面,柔和的阴影",
+    "descriptionHint": "描述氛围和光线就好 — 不用列举杯子、盘子、餐具这些道具。"
+  },
+  "assistive": {
+    "heading": "生成模式",
+    "subtitle": "自动生成会直接给出成果。审阅模式让你在确定前继续微调文案和图片。",
+    "optionAuto": "自动生成",
+    "optionReview": "审阅后定稿"
+  }
+}

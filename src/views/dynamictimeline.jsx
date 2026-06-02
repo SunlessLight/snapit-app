@@ -1,14 +1,18 @@
 import React from 'react';
-import { Check } from 'lucide-react'; // Assuming you use lucide-react
+import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-export default function DynamicTimeline({ currentStep, isEN }) {
-    const steps = [
-        { num: 1, label: isEN ? "Photo" : "Gambar" },
-        { num: 2, label: isEN ? "Edit" : "Sunting" },
-        { num: 3, label: isEN ? "Vibe" : "Suasana" },
-        { num: 4, label: isEN ? "AI Magic" : "Sihir AI" },
-        { num: 5, label: isEN ? "Result" : "Hasil" }
-    ];
+export default function DynamicTimeline({
+    currentStep,
+    showReview = false,
+}) {
+    const { t } = useTranslation('timeline');
+
+    // 1=Upload, 2=Edit, 3=Vibe, 4=AI Magic, [5=Review], 6=Result. The Review
+    // dot only appears for Pro+assistive; everyone else skips slot 5.
+    const labelForStep = (num) => t(`steps.${num}`);
+    const stepNums = showReview ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 6];
+    const steps = stepNums.map(num => ({ num, label: labelForStep(num) }));
 
     return (
         // Sticky wrapper that floats at the top

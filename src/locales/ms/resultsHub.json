@@ -1,0 +1,26 @@
+{
+  "heading": "Aset Pemasaran Anda",
+  "subheading": "Dah siap! Sedia untuk disalin, muat turun, dan kongsi.",
+  "labels": {
+    "aiEnhanced": "Hasil Sentuhan AI",
+    "edited": "Sunting Anda",
+    "original": "Asal",
+    "title": "Tajuk Menarik",
+    "description": "Penerangan",
+    "caption": "Kapsyen Sosial + Tags"
+  },
+  "download": {
+    "enhanced": "Muat Turun Gambar AI",
+    "edited": "Muat Turun Suntingan",
+    "original": "Muat Turun Gambar Asal",
+    "image": "Muat Turun Gambar"
+  },
+  "share": "Kongsi ke Media Sosial",
+  "startOver": "Muat Hidangan Baru",
+  "toast": {
+    "copied": "Teks disalin ke papan keratan!",
+    "copiedFallback": "Teks disalin! Sedia untuk ditampal.",
+    "downloadFailed": "Muat turun gagal — cuba lagi.",
+    "shareFailed": "Kongsi gagal — cuba lagi."
+  }
+}
