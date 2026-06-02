@@ -273,7 +273,6 @@ export default function App() {
     });
     setMarketingConfig(DEFAULT_MARKETING_CONFIG);
     setAiOutput(DEFAULT_AI_OUTPUT);
-    setProcessingNudge(null);
     setCurrentStep(STEP.DASHBOARD);
     try {
       localStorage.removeItem(MEDIA_STATE_STORAGE_KEY);

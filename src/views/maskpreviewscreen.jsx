@@ -105,7 +105,7 @@ export default function MaskPreviewScreen({ mediaState, onLooksRight, onRetake, 
                         edges are obvious. Pattern is a tiny SVG via inline
                         data-URL so there's no extra request. */}
                     <div
-                        className="relative w-full aspect-square rounded-3xl overflow-hidden border border-gray-200 shadow-sm"
+                        className={`relative mx-auto max-w-full rounded-3xl overflow-hidden border border-gray-200 shadow-sm ${cutoutUrl && !isLoading ? 'w-fit' : 'w-full aspect-square'}`}
                         style={{
                             backgroundImage:
                                 "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20'><rect width='10' height='10' fill='%23e5e7eb'/><rect x='10' y='10' width='10' height='10' fill='%23e5e7eb'/><rect x='10' width='10' height='10' fill='%23f3f4f6'/><rect y='10' width='10' height='10' fill='%23f3f4f6'/></svg>\")",
@@ -123,7 +123,7 @@ export default function MaskPreviewScreen({ mediaState, onLooksRight, onRetake, 
                             <img
                                 src={cutoutUrl}
                                 alt={t('maskPreview:previewAlt')}
-                                className="absolute inset-0 w-full h-full object-contain"
+                                className="block max-h-[500px] w-auto max-w-full object-contain"
                             />
                         )}
 

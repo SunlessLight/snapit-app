@@ -8,14 +8,15 @@ import SegmentedControl from '../components/SegmentedControl';
 // with eager:true bundles whichever files exist at build time; missing files
 // simply yield `undefined` in the lookup and we fall back to the gradient
 // rendering. Keeps the wiring shippable before Owner adds the JPEGs.
-const SCENE_THUMB_MODULES = import.meta.glob('../assets/scenes/*.jpg', {
+const SCENE_THUMB_MODULES = import.meta.glob('../assets/scenes/*.jpeg', {
     eager: true,
     query: '?url',
     import: 'default',
 });
+
 const SCENE_THUMBS = Object.fromEntries(
     Object.entries(SCENE_THUMB_MODULES).map(([p, url]) => {
-        const name = p.split('/').pop().replace(/\.jpg$/, '');
+        const name = p.split('/').pop().replace(/\.[^/.]+$/, '');
         return [name, url];
     })
 );
