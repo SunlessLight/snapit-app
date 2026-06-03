@@ -476,10 +476,7 @@ export default function App() {
         {showHeader && (
           <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
             <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
-            <DynamicTimeline
-              currentStep={currentStep}
-              showReview={!!marketingConfig.isContextPro && !!marketingConfig.assistiveMode}
-            />
+            <DynamicTimeline currentStep={currentStep} />
           </div>
         )}
       </div>
