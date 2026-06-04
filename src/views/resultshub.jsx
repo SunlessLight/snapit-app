@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cropBlobToRect } from '../utils/imageUtils';
+import { saveResultMeta, saveResultImages } from '../utils/resultPersistence';
 
 // --- Sub-Component: Smart Content Card ---
 const ContentCard = ({ label, value, field, onUpdate }) => {
@@ -155,8 +156,32 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
             mediaState.hue !== 50 || mediaState.blur !== 0 ||
             mediaState.sharpness !== 0 || mediaState.vignette !== 0
         ));
-    const wasModified = hasAiImage || mediaState.isEnhanced || slidersDifferFromDefault;
+    // `aiOutput.wasModified` is set only on a persisted-result restore (App.jsx seeds it
+    // from the saved snapshot). On a reload the live signals above are all false —
+    // isEnhanced is stripped from storage and there's no AI base64 — so without this the
+    // before/after slider would silently disappear after a reload even though both images
+    // were preserved. During a normal session it's undefined and contributes nothing.
+    const wasModified = hasAiImage || mediaState.isEnhanced || slidersDifferFromDefault || Boolean(aiOutput?.wasModified);
     const showSlider = Boolean(wasModified && afterSrc && beforeSrc);
+
+    // ----- Persist the latest result so it survives a tab close / reload -----
+    // Split into two effects on purpose: the text snapshot is cheap and should re-save on
+    // every inline caption edit, while the image write (fetch + IndexedDB) is heavier and
+    // only needs to run when the resolved before/after URLs change (~once per landing).
+    useEffect(() => {
+        saveResultMeta({
+            title: aiOutput?.title,
+            description: aiOutput?.description,
+            captions,
+            // Restored next time so the slider gate (`wasModified`) holds across reload.
+            wasModified,
+        });
+    }, [aiOutput?.title, aiOutput?.description, aiOutput?.captions, wasModified]);
+
+    useEffect(() => {
+        if (!beforeSrc || !afterSrc) return;
+        saveResultImages(beforeSrc, afterSrc);
+    }, [beforeSrc, afterSrc]);
 
     // Auto-slide reveal on mount: start on the original (slider right, value 100)
     // and sweep right→left to the final (value 0), so landing on Results Hub plays

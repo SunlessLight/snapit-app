@@ -66,11 +66,18 @@ export async function cropBlobToRect(blob, rect) {
             el.onerror = reject;
             el.src = url;
         });
+        // Clamp the rect inside the image so a rounding/coordinate-space slip can
+        // never sample past the edge — out-of-bounds source pixels encode as black
+        // in the (alpha-less) JPEG.
+        const x = Math.max(0, Math.min(rect.x, img.naturalWidth));
+        const y = Math.max(0, Math.min(rect.y, img.naturalHeight));
+        const width = Math.min(rect.width, img.naturalWidth - x);
+        const height = Math.min(rect.height, img.naturalHeight - y);
         const canvas = document.createElement('canvas');
-        canvas.width = Math.floor(rect.width);
-        canvas.height = Math.floor(rect.height);
+        canvas.width = Math.floor(width);
+        canvas.height = Math.floor(height);
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+        ctx.drawImage(img, x, y, width, height, 0, 0, width, height);
         return await new Promise((resolve, reject) => {
             canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas empty')), 'image/jpeg', 0.95);
         });

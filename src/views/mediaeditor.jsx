@@ -335,31 +335,34 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
             const newBlob = await getCroppedImg(imgRef.current, completedCrop);
             const newUrl = URL.createObjectURL(newBlob);
 
-            // Convert the displayed-pixel crop into natural pixels of the *current*
-            // mediaState.file. If a composite rect already exists (user has cropped
-            // before), this new crop is relative to a sub-rect of the original — but
-            // since getCroppedImg never resamples, the sub-rect's natural pixels equal
-            // its own dimensions, so the composition is plain translation.
+            // Record the crop as FRACTIONS of the displayed image, then map those
+            // onto the region of the ORIGINAL upload the displayed image represents.
+            // This keeps compositeCropRect in originalFile pixels regardless of how
+            // many times Claid upscaled the working file — so Results Hub can re-crop
+            // the 1× original in-bounds. (Reading el.naturalWidth here would record the
+            // rect in the *enhanced* grid, the bug that baked black borders into the
+            // "before" image when a crop followed an enhance.)
             const el = imgRef.current;
-            const scaleX = el.naturalWidth / el.width;
-            const scaleY = el.naturalHeight / el.height;
-            const newRect = {
-                x: completedCrop.x * scaleX,
-                y: completedCrop.y * scaleY,
-                width: completedCrop.width * scaleX,
-                height: completedCrop.height * scaleY,
-            };
+            const fx = completedCrop.x / el.width;
+            const fy = completedCrop.y / el.height;
+            const fw = completedCrop.width / el.width;
+            const fh = completedCrop.height / el.height;
+
+            // Original-space dimensions — needed when this is the first crop on an
+            // already-enhanced file, where el.naturalWidth != originalFile width.
+            const origDims = await getBlobDimensions(activeImg.originalFile);
 
             setMediaState(prev => {
                 if (prev.url) URL.revokeObjectURL(prev.url);
-                const composed = prev.compositeCropRect
-                    ? {
-                        x: prev.compositeCropRect.x + newRect.x,
-                        y: prev.compositeCropRect.y + newRect.y,
-                        width: newRect.width,
-                        height: newRect.height,
-                    }
-                    : newRect;
+                // The sub-rect of the ORIGINAL that the displayed image currently shows.
+                const region = prev.compositeCropRect
+                    ?? { x: 0, y: 0, width: origDims.width, height: origDims.height };
+                const composed = {
+                    x: region.x + fx * region.width,
+                    y: region.y + fy * region.height,
+                    width: fw * region.width,
+                    height: fh * region.height,
+                };
                 return {
                     ...prev,
                     file: newBlob,

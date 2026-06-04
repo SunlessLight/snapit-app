@@ -14,6 +14,12 @@ import snapitLogo from './assets/snapit-logo.png';
 import Header from './views/header';
 import DynamicTimeline from './views/dynamictimeline';
 import { authService } from './services/authService';
+import {
+  loadResultMeta,
+  loadResultImages,
+  clearResultMeta,
+  clearResultImages,
+} from './utils/resultPersistence';
 import i18n from './i18n';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -213,7 +219,28 @@ export default function App() {
       ...loadStallProfile(),
     };
   });
-  const [aiOutput, setAiOutput] = useState(DEFAULT_AI_OUTPUT);
+  // Restore the latest result's TEXT synchronously so the Results Hub renders real
+  // captions on the very first paint. The two images load async from IndexedDB (see the
+  // restore effect below) into mediaState; generatedImageBase64 stays null because the
+  // "after" comes back via mediaState.processedUrl.
+  const [aiOutput, setAiOutput] = useState(() => {
+    const meta = loadResultMeta();
+    if (!meta) return DEFAULT_AI_OUTPUT;
+    return {
+      ...DEFAULT_AI_OUTPUT,
+      title: meta.title ?? DEFAULT_AI_OUTPUT.title,
+      description: meta.description ?? DEFAULT_AI_OUTPUT.description,
+      captions: Array.isArray(meta.captions) && meta.captions.length
+        ? meta.captions
+        : DEFAULT_AI_OUTPUT.captions,
+      generatedImageBase64: null,
+      wasModified: !!meta.wasModified,
+    };
+  });
+  // True while we're pulling a persisted result's images out of IndexedDB on boot. Gates
+  // the Results Hub behind a spinner so the vendor never sees the demo image flash before
+  // their real before/after blobs arrive.
+  const [restoringResult, setRestoringResult] = useState(() => !!loadResultMeta());
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerWrapperRef = useRef(null);
@@ -292,6 +319,11 @@ export default function App() {
     setMarketingConfig({ ...DEFAULT_MARKETING_CONFIG, ...loadStallProfile() });
     setAiOutput(DEFAULT_AI_OUTPUT);
     setCurrentStep(STEP.DASHBOARD);
+    setRestoringResult(false);
+    // Start Over discards the saved result — "latest only" means there's nothing to keep
+    // once the vendor explicitly starts a new post. clearResultImages is fire-and-forget.
+    clearResultMeta();
+    clearResultImages();
     try {
       localStorage.removeItem(MEDIA_STATE_STORAGE_KEY);
       localStorage.removeItem(MARKETING_CONFIG_STORAGE_KEY);
@@ -320,7 +352,10 @@ export default function App() {
       setUserName(session?.user?.user_metadata?.username || '');
       setAuthLoading(false);
       if (session) {
-        setCurrentStep(STEP.DASHBOARD);
+        // Pick up where they left off: a reload with a saved result lands on Results Hub,
+        // otherwise the Dashboard. This is the "results are still there" path — Supabase
+        // keeps the session across a tab close, so getSession resolves without re-login.
+        setCurrentStep(loadResultMeta() ? STEP.RESULTS : STEP.DASHBOARD);
         fetchCredits();
       }
     });
@@ -341,7 +376,7 @@ export default function App() {
     setUserName(username || '');
     setShowLoginScreen(false);
     setAuthMode('login');
-    setCurrentStep(STEP.DASHBOARD);
+    setCurrentStep(loadResultMeta() ? STEP.RESULTS : STEP.DASHBOARD);
   }, []);
 
   // Handle logout
@@ -355,6 +390,41 @@ export default function App() {
   // Context Config advances straight to Processing.
   const handleConfigNext = useCallback(() => {
     setCurrentStep(STEP.PROCESSING);
+  }, []);
+
+  // ========== RESTORE PERSISTED RESULT (images) ==========
+  // Text was restored synchronously into aiOutput's initializer; the before/after images
+  // live in IndexedDB and must be loaded async. We feed them into mediaState as plain URLs
+  // (originalUrl → before, processedUrl → after) so Results Hub resolves beforeSrc/afterSrc
+  // to them with no other changes. Runs once on mount.
+  useEffect(() => {
+    if (!loadResultMeta()) return;
+    let cancelled = false;
+    loadResultImages()
+      .then(({ beforeUrl, afterUrl }) => {
+        if (cancelled) {
+          // StrictMode's throwaway first run — revoke the URLs it created so they don't leak.
+          if (beforeUrl) URL.revokeObjectURL(beforeUrl);
+          if (afterUrl) URL.revokeObjectURL(afterUrl);
+          return;
+        }
+        if (!beforeUrl && !afterUrl) {
+          // Meta survived but the images didn't (IDB cleared / evicted). Drop the stale
+          // snapshot rather than restore a result with the demo photo standing in for it.
+          clearResultMeta();
+          setCurrentStep((prev) => (prev === STEP.RESULTS ? STEP.DASHBOARD : prev));
+        } else {
+          setMediaState((prev) => ({
+            ...prev,
+            url: beforeUrl || prev.url,
+            originalUrl: beforeUrl || prev.originalUrl,
+            processedUrl: afterUrl || prev.processedUrl,
+          }));
+        }
+        setRestoringResult(false);
+      })
+      .catch(() => { if (!cancelled) setRestoringResult(false); });
+    return () => { cancelled = true; };
   }, []);
 
   // ========== PERSISTENCE ==========
@@ -451,6 +521,16 @@ export default function App() {
         return <LoginScreen onSuccess={handleLoginSuccess} authMode={authMode} />;
       }
       return <WelcomeScreen onLogin={handleShowLogin} onSignUp={handleShowSignUp} />;
+    }
+
+    // Restoring a persisted result: hold the Results Hub behind a spinner until its
+    // before/after images come back from IndexedDB, so the demo photo never flashes.
+    if (restoringResult && currentStep === STEP.RESULTS) {
+      return (
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-[#dc2626] rounded-full animate-spin" />
+        </div>
+      );
     }
 
     // User is authenticated - show workflow. Step values come from STEP so any
