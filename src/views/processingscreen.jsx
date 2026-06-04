@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { authService } from '../services/authService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -9,9 +10,10 @@ export default function ProcessingScreen({
     marketingConfig,
     setAiOutput,
     onComplete,
+    onBalanceUpdate,
     onPrev
 }) {
-    const { t } = useTranslation('processing');
+    const { t } = useTranslation(['processing', 'common']);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [error, setError] = useState(null);
 
@@ -89,19 +91,24 @@ export default function ProcessingScreen({
                 formData.append('hours', hours);
                 formData.append('contact', contact);
 
-                // STEP 1: Initial POST to start the job
+                // STEP 1: Initial POST to start the job (authenticated + metered)
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {
                     method: 'POST',
+                    headers: await authService.authHeader(),
                     body: formData,
                     signal: abortController.signal,
                 });
 
                 if (!response.ok) {
+                    if (response.status === 402) throw new Error(t('common:credits.outOfCredits'));
+                    if (response.status === 401) throw new Error(t('common:credits.authExpired'));
+                    if (response.status === 429) throw new Error(t('common:credits.rateLimited'));
                     const errorData = await response.json().catch(() => null);
                     throw new Error(errorData?.error || `Server Error: ${response.status}`);
                 }
 
-                const { jobId } = await response.json();
+                const { jobId, balance } = await response.json();
+                if (typeof balance === 'number') onBalanceUpdate?.(balance);
                 if (!isMounted) return;
 
                 // STEP 2: Start Polling the status endpoint

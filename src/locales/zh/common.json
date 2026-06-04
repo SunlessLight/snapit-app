@@ -7,6 +7,12 @@
   "on": "开",
   "off": "关",
   "guest": "访客",
+  "credits": {
+    "tooltip": "剩余额度。每次 AI 生图（生成、增强、更换背景）扣 1 点。",
+    "outOfCredits": "额度已用完。免费试用次数已耗尽，充值功能即将推出。",
+    "authExpired": "登录已过期，请重新登录。",
+    "rateLimited": "操作过于频繁，请稍候再试。"
+  },
   "platforms": {
     "instagram": "Instagram",
     "facebook": "Facebook",

@@ -7,6 +7,12 @@
   "on": "ON",
   "off": "OFF",
   "guest": "Guest",
+  "credits": {
+    "tooltip": "Credits left. Each AI image (generate, enhance, new background) uses 1.",
+    "outOfCredits": "You're out of credits. You've used your free trial — top-ups are coming soon.",
+    "authExpired": "Your session expired. Please sign in again.",
+    "rateLimited": "Too many requests in a row. Please wait a moment and try again."
+  },
   "platforms": {
     "instagram": "Instagram",
     "facebook": "Facebook",

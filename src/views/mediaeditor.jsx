@@ -34,6 +34,7 @@ import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../components/SegmentedControl';
 import { needsClaidEnhance } from '../utils/captureHeuristics';
 import { cropBlobToRect, getBlobDimensions } from '../utils/imageUtils';
+import { authService } from '../services/authService';
 
 // Downsample size for the enhance-cost gate. Matches dashboard's photo-check
 // canvas — small enough to read pixels in <100ms, big enough for the blur/
@@ -130,7 +131,7 @@ function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
     return centerCrop(makeAspectCrop({ unit: '%', width: 90 }, aspect, mediaWidth, mediaHeight), mediaWidth, mediaHeight);
 }
 
-export default function MediaEditorView({ mediaState, setMediaState, onNext, onPrev }) {
+export default function MediaEditorView({ mediaState, setMediaState, onBalanceUpdate, onNext, onPrev }) {
     const { t } = useTranslation(['mediaEditor', 'common']);
     // UI State Machine: 'DEFAULT' | 'ADJUST' | 'CROP'
     const [controlState, setControlState] = useState('DEFAULT');
@@ -250,15 +251,29 @@ export default function MediaEditorView({ mediaState, setMediaState, onNext, onP
 
             const response = await fetch(`${API_BASE_URL}/api/enhance`, {
                 method: 'POST',
+                headers: await authService.authHeader(),
                 body: formData,
                 signal: controller.signal,
             });
 
+            // Auth/credit/rate-limit: tell the vendor why, then still give them
+            // the free local enhance (it costs no credit) so the button isn't a
+            // dead end when they're out of paid enhances.
+            if (response.status === 402 || response.status === 401 || response.status === 429) {
+                const msg = response.status === 402 ? t('common:credits.outOfCredits')
+                    : response.status === 401 ? t('common:credits.authExpired')
+                        : t('common:credits.rateLimited');
+                alert(msg);
+                applyLocalEnhance();
+                return;
+            }
             if (!response.ok) {
                 throw new Error(`Enhance failed: HTTP ${response.status}`);
             }
 
             const claidBlob = await response.blob();
+            const newBalance = Number(response.headers.get('X-Credit-Balance'));
+            if (!Number.isNaN(newBalance)) onBalanceUpdate?.(newBalance);
             let finalBlob = claidBlob;
             if (activeImg.compositeCropRect) {
                 // compositeCropRect is in the ORIGINAL upload's natural pixels, but

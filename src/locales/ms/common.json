@@ -7,6 +7,12 @@
   "on": "BUKA",
   "off": "TUTUP",
   "guest": "Tetamu",
+  "credits": {
+    "tooltip": "Baki kredit. Setiap imej AI (jana, tingkatkan, latar baharu) guna 1.",
+    "outOfCredits": "Kredit anda habis. Percubaan percuma telah digunakan — tambah nilai akan datang tidak lama lagi.",
+    "authExpired": "Sesi anda tamat. Sila log masuk semula.",
+    "rateLimited": "Terlalu banyak permintaan. Sila tunggu sebentar dan cuba lagi."
+  },
   "platforms": {
     "instagram": "Instagram",
     "facebook": "Facebook",

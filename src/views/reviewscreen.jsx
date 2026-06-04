@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, RefreshCw, Loader2, Image as ImageIcon, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { authService } from '../services/authService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -26,8 +27,17 @@ const AutosizeTextarea = ({ value, onChange, rows = 3, disabled = false, placeho
     );
 };
 
-export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, setAiOutput, onNext, onPrev }) {
+export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, setAiOutput, onBalanceUpdate, onNext, onPrev }) {
     const { t } = useTranslation(['review', 'common']);
+
+    // Shared mapping for the auth/credit/rate-limit statuses so both regen lanes
+    // show the same friendly copy instead of a raw backend code.
+    const messageForStatus = (status) => {
+        if (status === 402) return t('common:credits.outOfCredits');
+        if (status === 401) return t('common:credits.authExpired');
+        if (status === 429) return t('common:credits.rateLimited');
+        return null;
+    };
 
     // Per-platform captions. Review regenerates ONE platform at a time; the
     // active platform pill drives which caption the change-prompt targets.
@@ -107,9 +117,12 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
 
             const res = await fetch(`${API_BASE_URL}/api/regenerate/captions`, {
                 method: 'POST',
+                headers: await authService.authHeader(),
                 body: formData,
                 signal: controller.signal,
             });
+            const friendly = messageForStatus(res.status);
+            if (friendly) throw new Error(friendly);
             const json = await res.json();
             if (!res.ok || !json.success) {
                 throw new Error(json.error || `Server error: ${res.status}`);
@@ -170,13 +183,17 @@ export default function ReviewScreen({ mediaState, marketingConfig, aiOutput, se
 
             const res = await fetch(`${API_BASE_URL}/api/regenerate/background`, {
                 method: 'POST',
+                headers: await authService.authHeader(),
                 body: formData,
                 signal: controller.signal,
             });
+            const friendly = messageForStatus(res.status);
+            if (friendly) throw new Error(friendly);
             const json = await res.json();
             if (!res.ok || !json.success) {
                 throw new Error(json.error || `Server error: ${res.status}`);
             }
+            if (typeof json.balance === 'number') onBalanceUpdate?.(json.balance);
             setAiOutput(prev => ({
                 ...prev,
                 generatedImageBase64: json.generatedImageBase64,

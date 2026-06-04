@@ -31,4 +31,20 @@ export const onAuthStateChange = (callback) => {
   return supabase.auth.onAuthStateChange(callback)
 }
 
-export const authService = { register, login, logout, getSession, onAuthStateChange }
+// Phase 7: the backend now requires `Authorization: Bearer <access_token>` on
+// every paid route. getSession() returns the current (auto-refreshed) session,
+// so the token is always fresh. Returns null when signed out.
+export const getAccessToken = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token ?? null
+}
+
+// Convenience for fetch(): spreads to `{}` when signed out so callers can do
+// `headers: { ...(await authHeader()) }` unconditionally. Never sets
+// Content-Type — FormData must set its own multipart boundary.
+export const authHeader = async () => {
+  const token = await getAccessToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+export const authService = { register, login, logout, getSession, onAuthStateChange, getAccessToken, authHeader }

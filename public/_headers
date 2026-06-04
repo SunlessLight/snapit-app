@@ -1,0 +1,13 @@
+# Netlify security headers. Files in public/ are copied to the dist root, so
+# Netlify picks this up automatically on deploy. Applies to every route.
+#
+# IMPORTANT: connect-src must list every origin the app talks to. It currently
+# allows Supabase (auth + realtime) and a Render-hosted backend. If you move the
+# backend off *.onrender.com, add its origin here or the browser will block the
+# API calls (CSP failures show up as "Refused to connect" in the console).
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.onrender.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'

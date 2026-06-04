@@ -16,6 +16,8 @@ import DynamicTimeline from './views/dynamictimeline';
 import { authService } from './services/authService';
 import i18n from './i18n';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const UI_LANGUAGE_STORAGE_KEY = 'snapit:uiLanguage';
 const SUPPORTED_UI_LANGUAGES = ['EN', 'ZH', 'MS'];
 
@@ -165,6 +167,10 @@ export default function App() {
   const [showLoginScreen, setShowLoginScreen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const isAuthenticated = !!session;
+  // Phase 7: live credit balance. null = unknown/not-yet-fetched (the header
+  // pill hides until we have a real number). Paid screens push updates back up
+  // via onBalanceUpdate; we also refetch on login and on Start Over.
+  const [credits, setCredits] = useState(null);
 
   // ========== APP STATE ==========
   const [currentStep, setCurrentStep] = useState(0);
@@ -292,6 +298,20 @@ export default function App() {
     } catch { /* ignore */ }
   }, []);
 
+  // Fetch the current credit balance from the backend (auth required). Safe to
+  // call any time; silently no-ops when signed out or the backend is down so it
+  // never blocks the UI.
+  const fetchCredits = useCallback(async () => {
+    try {
+      const headers = await authService.authHeader();
+      if (!headers.Authorization) return;
+      const res = await fetch(`${API_BASE_URL}/api/me/balance`, { headers });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (typeof json.balance === 'number') setCredits(json.balance);
+    } catch { /* offline / backend down — leave the pill as-is */ }
+  }, []);
+
   // ========== AUTH EFFECTS ==========
   useEffect(() => {
     authService.getSession().then((session) => {
@@ -299,17 +319,22 @@ export default function App() {
       setUser(session?.user ?? null);
       setUserName(session?.user?.user_metadata?.username || '');
       setAuthLoading(false);
-      if (session) setCurrentStep(STEP.DASHBOARD);
+      if (session) {
+        setCurrentStep(STEP.DASHBOARD);
+        fetchCredits();
+      }
     });
 
     const { data: { subscription } } = authService.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setUserName(session?.user?.user_metadata?.username || '');
+      if (session) fetchCredits();
+      else setCredits(null);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchCredits]);
 
   // Handle login success — session/user already updated by onAuthStateChange
   const handleLoginSuccess = useCallback(({ username }) => {
@@ -437,13 +462,13 @@ export default function App() {
       case STEP.DASHBOARD:
         return <DashboardView userName={userName} onImageSelect={handleImageSelect} onImageRemove={handleImageRemove} mediaState={mediaState} onNext={nextStep} />;
       case STEP.EDITOR:
-        return <MediaEditorView userName={userName} mediaState={mediaState} setMediaState={setMediaState} onNext={nextStep} onPrev={prevStep} />;
+        return <MediaEditorView userName={userName} mediaState={mediaState} setMediaState={setMediaState} onBalanceUpdate={setCredits} onNext={nextStep} onPrev={prevStep} />;
       case STEP.CONFIG:
         return <ContextConfigurationView userName={userName} mediaState={mediaState} setMediaState={setMediaState} config={marketingConfig} setConfig={setMarketingConfig} onNext={handleConfigNext} onPrev={prevStep} />;
       case STEP.PROCESSING:
-        return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onPrev={prevStep} />;
+        return <ProcessingScreen userName={userName} mediaState={mediaState} marketingConfig={marketingConfig} setAiOutput={setAiOutput} onComplete={handleProcessingComplete} onBalanceUpdate={setCredits} onPrev={prevStep} />;
       case STEP.REVIEW:
-        return <ReviewScreen mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onNext={nextStep} onPrev={prevStep} />;
+        return <ReviewScreen mediaState={mediaState} marketingConfig={marketingConfig} aiOutput={aiOutput} setAiOutput={setAiOutput} onBalanceUpdate={setCredits} onNext={nextStep} onPrev={prevStep} />;
       case STEP.RESULTS:
         return <ResultsHubView userName={userName} mediaState={mediaState} aiOutput={aiOutput} setAiOutput={setAiOutput} onStartOver={handleStartOver} onPrev={prevStep} />;
       default:
@@ -475,7 +500,7 @@ export default function App() {
       >
         {showHeader && (
           <div className="pointer-events-auto"> {/* Slight bottom padding so the shadow breathes */}
-            <Header snapitLogo={snapitLogo} userName={userName} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
+            <Header snapitLogo={snapitLogo} userName={userName} credits={credits} appUILanguage={appUILanguage} setAppUILanguage={setAppUILanguage} />
             <DynamicTimeline currentStep={currentStep} />
           </div>
         )}
