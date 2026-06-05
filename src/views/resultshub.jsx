@@ -249,13 +249,29 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
         }
 
         try {
+            const blob = await (await fetch(targetUrl)).blob();
+            const file = new File([blob], fileName, { type: blob.type || 'image/png' });
+
+            // iOS Safari ignores <a download> — it navigates to the image instead of
+            // saving, so nothing lands in Photos. The native share sheet's "Save Image"
+            // is the only reliable path there. Use it whenever the platform can share
+            // files; fall back to the anchor download on desktop / Android.
+            if (navigator.canShare?.({ files: [file] })) {
+                await navigator.share({ files: [file], title: fileName });
+                return;
+            }
+
+            const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = targetUrl;
+            link.href = objectUrl;
             link.download = fileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(objectUrl);
         } catch (error) {
+            // User dismissed the iOS share sheet — treat as no-op, not failure.
+            if (error.name === 'AbortError') return;
             console.error("Error downloading:", error);
             showToast(t('toast.downloadFailed'));
         }
