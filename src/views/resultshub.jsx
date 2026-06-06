@@ -12,6 +12,16 @@ import { useTranslation } from 'react-i18next';
 import { cropBlobToRect } from '../utils/imageUtils';
 import { saveResultMeta, saveResultImages } from '../utils/resultPersistence';
 
+// iOS Safari ignores <a download> (it navigates to the image instead of saving),
+// so there we route through the native share sheet's "Save Image". Desktop and
+// Android keep the plain anchor download — gating on navigator.canShare({ files })
+// was wrong because desktop Chrome (Win/ChromeOS) also reports it true and would
+// hijack the download into a share sheet. iPadOS reports as MacIntel, hence the
+// touch-points check.
+const isIOS = () =>
+    /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 // --- Sub-Component: Smart Content Card ---
 const ContentCard = ({ label, value, field, onUpdate }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -209,6 +219,30 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
         return () => { if (autoSlideRafRef.current) cancelAnimationFrame(autoSlideRafRef.current); };
     }, [showSlider]);
 
+    // Pre-fetch the before/after images to Blobs BEFORE any download/share click.
+    // navigator.share() requires transient user activation, and an awaited fetch()
+    // between the click and the share() call consumes/expires that activation on
+    // iOS (NotAllowedError) — so the sheet never opens. Caching the Blobs here lets
+    // the click handler wrap one in a File and call share() synchronously, with the
+    // gesture's activation still fresh. (new File([blob], name) is synchronous.)
+    const downloadBlobsRef = useRef({ before: null, after: null });
+    useEffect(() => {
+        let cancelled = false;
+        const load = async (src) => {
+            if (!src) return null;
+            try {
+                return await (await fetch(src)).blob();
+            } catch {
+                return null;
+            }
+        };
+        (async () => {
+            const [before, after] = await Promise.all([load(beforeSrc), load(afterSrc)]);
+            if (!cancelled) downloadBlobsRef.current = { before, after };
+        })();
+        return () => { cancelled = true; };
+    }, [beforeSrc, afterSrc]);
+
     const handleUpdateText = (key, value) => {
         setAiOutput(prev => ({ ...prev, [key]: value }));
     };
@@ -249,18 +283,25 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
         }
 
         try {
-            const blob = await (await fetch(targetUrl)).blob();
-            const file = new File([blob], fileName, { type: blob.type || 'image/png' });
-
-            // iOS Safari ignores <a download> — it navigates to the image instead of
-            // saving, so nothing lands in Photos. The native share sheet's "Save Image"
-            // is the only reliable path there. Use it whenever the platform can share
-            // files; fall back to the anchor download on desktop / Android.
-            if (navigator.canShare?.({ files: [file] })) {
-                await navigator.share({ files: [file], title: fileName });
-                return;
+            // iOS: route through the native share sheet ("Save Image"), since iOS
+            // Safari ignores <a download>. Use the PRE-FETCHED blob and call share()
+            // synchronously so the gesture's activation isn't consumed by an await
+            // (see downloadBlobsRef). Only fall back to fetching if the cache missed.
+            if (isIOS()) {
+                const cached = showingFinal
+                    ? downloadBlobsRef.current.after
+                    : downloadBlobsRef.current.before;
+                const blob = cached || await (await fetch(targetUrl)).blob();
+                const file = new File([blob], fileName, { type: blob.type || 'image/png' });
+                if (navigator.canShare?.({ files: [file] })) {
+                    await navigator.share({ files: [file], title: fileName });
+                    return;
+                }
             }
 
+            // Desktop / Android: plain anchor download. Works on both and never
+            // hijacks into a share sheet.
+            const blob = await (await fetch(targetUrl)).blob();
             const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = objectUrl;
@@ -285,11 +326,14 @@ export default function ResultsHubView({ mediaState, aiOutput, setAiOutput, onSt
         const targetShareUrl = afterSrc;
 
         try {
-            const response = await fetch(targetShareUrl);
-            const blob = await response.blob();
-            const file = new File([blob], 'SnapIT_Result.png', { type: 'image/png' });
+            // Same activation rule as handleDownload: prefer the pre-fetched "after"
+            // blob so share() runs synchronously and iOS keeps the gesture activation.
+            // Falls back to fetching only on a cache miss.
+            const blob = downloadBlobsRef.current.after
+                || await (await fetch(targetShareUrl)).blob();
+            const file = new File([blob], 'SnapIT_Result.png', { type: blob.type || 'image/png' });
 
-            if (navigator.share) {
+            if (navigator.canShare?.({ files: [file] })) {
                 await navigator.share({
                     title: aiOutput.title,
                     text: combinedText,
