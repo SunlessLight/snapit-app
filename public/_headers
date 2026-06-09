@@ -5,9 +5,18 @@
 # allows Supabase (auth + realtime) and a Render-hosted backend. If you move the
 # backend off *.onrender.com, add its origin here or the browser will block the
 # API calls (CSP failures show up as "Refused to connect" in the console).
+#
+# connect-src MUST also include `blob:` and `data:` — Results Hub Download/Share
+# `fetch()` the before/after result images, which are blob:/data: object URLs the
+# app minted. fetch() is policed by connect-src (unlike an <a href download>, which
+# is navigation), so without these two schemes the download/share fetch is refused.
+#
+# worker-src 'self' blob: — browser-image-compression spawns a Web Worker from a
+# blob URL; without an explicit worker-src it falls back to script-src 'self' and
+# the worker is blocked (compression then silently runs on the main thread).
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=()
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.onrender.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co https://*.onrender.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
