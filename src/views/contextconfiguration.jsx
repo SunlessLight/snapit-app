@@ -148,6 +148,10 @@ export default function ContextConfigurationView({ config, setConfig, onNext, on
                         processedFile: compressedFile,
                         processedUrl: compressedUrl
                     }));
+                } else {
+                    // Unmounted mid-bake (fast back-nav). Nothing will store this url,
+                    // so revoke it here instead of leaking the blob.
+                    URL.revokeObjectURL(compressedUrl);
                 }
             } catch (error) {
                 console.error("Background processing failed:", error);

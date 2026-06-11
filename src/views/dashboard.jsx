@@ -1,10 +1,11 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import heic2any from 'heic2any';
 import { useTranslation } from 'react-i18next';
 import { Camera, ArrowRight, X, Loader2, UploadCloud, Sun, Focus, Lightbulb, Utensils, AlertTriangle } from 'lucide-react';
 import PhotoCheckModal from '../components/PhotoCheckModal';
 import { checkStillImage } from '../utils/captureHeuristics';
+import { authService } from '../services/authService';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const ANALYSIS_SIZE = 512;
 
 // Decode a blob URL into ImageData on a small canvas, run the heuristic checks.
@@ -85,16 +86,26 @@ export default function DashboardView({ onImageSelect, onImageRemove, mediaState
         setIsProcessing(true);
         const startTime = performance.now();
         let finalProcessedFile = selectedFile;
-        const isHeic = selectedFile.type === 'image/heic' || selectedFile.name.toLowerCase().endsWith('.heic');
+        const isHeic = /image\/hei[cf]/.test(selectedFile.type) || /\.hei[cf]$/i.test(selectedFile.name);
 
         try {
             if (isHeic) {
-                console.log("HEIC detected. Converting to JPEG...");
-                const promisejpeg = await heic2any({ blob: selectedFile, toType: "image/jpeg" });
-                const finalBlob = Array.isArray(promisejpeg) ? promisejpeg[0] : promisejpeg;
+                // Convert HEIC/HEIF server-side (sharp/libvips). The old client-side
+                // heic2any used `new Function`, blocked by the production CSP. The
+                // backend route is auth-gated but free (no credit).
+                console.log("HEIC detected. Converting server-side...");
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+                const resp = await fetch(`${API_BASE_URL}/api/convert-heic`, {
+                    method: 'POST',
+                    headers: await authService.authHeader(),
+                    body: formData,
+                });
+                if (!resp.ok) throw new Error(`HEIC conversion failed: HTTP ${resp.status}`);
+                const finalBlob = await resp.blob();
                 finalProcessedFile = new File(
                     [finalBlob],
-                    selectedFile.name.replace(/\.heic$/i, '.jpeg'),
+                    selectedFile.name.replace(/\.hei[cf]$/i, '.jpeg'),
                     { type: 'image/jpeg' }
                 );
             }

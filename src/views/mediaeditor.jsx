@@ -32,7 +32,7 @@ import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../components/SegmentedControl';
-import { needsClaidEnhance } from '../utils/captureHeuristics';
+import { needsClaidEnhance, recommendLocalEnhance, LOCAL_ENHANCE_FALLBACK } from '../utils/captureHeuristics';
 import { cropBlobToRect, getBlobDimensions } from '../utils/imageUtils';
 import { authService } from '../services/authService';
 
@@ -109,7 +109,13 @@ async function shouldUseClaidEnhance(file) {
                     ctx.drawImage(img, 0, 0, ENHANCE_ANALYSIS_SIZE, ENHANCE_ANALYSIS_SIZE);
                     try {
                         const imageData = ctx.getImageData(0, 0, ENHANCE_ANALYSIS_SIZE, ENHANCE_ANALYSIS_SIZE);
-                        resolve(needsClaidEnhance(imageData, naturalDimensions));
+                        // Same decode feeds both the spend decision AND the adaptive
+                        // local-enhance values, so the local pass is tuned to this photo
+                        // instead of a fixed bump (the old washout bug).
+                        resolve({
+                            ...needsClaidEnhance(imageData, naturalDimensions),
+                            adjustments: recommendLocalEnhance(imageData),
+                        });
                     } catch {
                         resolve({ needed: true, reasons: ['decode'] });
                     }
@@ -186,12 +192,21 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
     //     upscale/polish would add nothing — this is the credit-saving path;
     // (2) the failure fallback, so the button is never a dead end when Claid is
     //     unreachable. Caches prior slider values for the revert click.
-    const applyLocalEnhance = () => {
+    const applyLocalEnhance = (adjustments) => {
+        // `adjustments` is measured per-photo by the cost gate (recommendLocalEnhance).
+        // When absent (demo image / decode failure) fall back to a gentle, can't-wash-
+        // out default. Either way these are slider values (50 = no change) that
+        // ContextConfiguration.createProcessedBlob bakes into the final JPEG.
+        const adj = adjustments ?? LOCAL_ENHANCE_FALLBACK;
         setCachedValues({
             b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation,
             h: activeImg.hue, bl: activeImg.blur, sh: activeImg.sharpness, v: activeImg.vignette
         });
-        setMediaState(prev => ({ ...prev, brightness: 53, contrast: 54, saturation: 58, isEnhanced: true }));
+        setMediaState(prev => ({
+            ...prev,
+            brightness: adj.brightness, contrast: adj.contrast, saturation: adj.saturation,
+            isEnhanced: true,
+        }));
     };
 
     const handleAutoEnhance = async () => {
@@ -202,7 +217,15 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
         // have cachedValues, so restore those too; otherwise sliders stay where they are.
         if (activeImg.isEnhanced) {
             setMediaState(prev => {
-                if (prev.url && prev.url !== prev.preEnhanceUrl) URL.revokeObjectURL(prev.url);
+                // Only revoke a URL the *Claid* enhance minted (preEnhanceUrl is set,
+                // and the current url differs from it). The local-enhance path never
+                // swaps the file/url — preEnhanceUrl stays null — so here prev.url IS
+                // the live image; revoking it (the old bug) killed the photo, and the
+                // `?? prev.url` restore below then handed back a dead blob URL → the
+                // "image disappears after enhance → revert → crop" report.
+                if (prev.preEnhanceUrl && prev.url && prev.url !== prev.preEnhanceUrl) {
+                    URL.revokeObjectURL(prev.url);
+                }
                 const restoredSliders = cachedValues ? {
                     brightness: cachedValues.b, contrast: cachedValues.c, saturation: cachedValues.s,
                     hue: cachedValues.h ?? prev.hue, blur: cachedValues.bl ?? prev.blur,
@@ -231,16 +254,20 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
 
         setIsEnhancing(true);
         const controller = new AbortController();
+        // Declared outside the try so the catch fallback can reuse the per-photo
+        // adjustments if the gate already measured them before Claid threw.
+        let gateAdjustments;
         try {
             // Cost gate (budget §6a). Only spend a Claid credit when the photo
             // needs what Claid uniquely does (recover blur, upscale low-res,
             // rescue severe exposure). A sharp, well-exposed, ≥1024px photo gets
             // the free local enhance instead — same visible "enhanced" state, no
             // credit burned. Fails open to Claid if the photo can't be decoded.
-            const { needed, reasons } = await shouldUseClaidEnhance(activeImg.originalFile);
+            const { needed, reasons, adjustments } = await shouldUseClaidEnhance(activeImg.originalFile);
+            gateAdjustments = adjustments;
             if (!needed) {
                 console.info('Enhance: photo already good — local enhance, Claid skipped (saved 1 credit).');
-                applyLocalEnhance();
+                applyLocalEnhance(adjustments);
                 setIsEnhancing(false);
                 return;
             }
@@ -264,7 +291,7 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
                     : response.status === 401 ? t('common:credits.authExpired')
                         : t('common:credits.rateLimited');
                 alert(msg);
-                applyLocalEnhance();
+                applyLocalEnhance(gateAdjustments);
                 return;
             }
             if (!response.ok) {
@@ -314,7 +341,7 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
         } catch (err) {
             console.error('Claid enhance failed, falling back to local slider-nudge:', err);
             alert(t('mediaEditor:enhance.failed'));
-            applyLocalEnhance();
+            applyLocalEnhance(gateAdjustments);
         } finally {
             setIsEnhancing(false);
         }
@@ -353,7 +380,14 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
             const origDims = await getBlobDimensions(activeImg.originalFile);
 
             setMediaState(prev => {
-                if (prev.url) URL.revokeObjectURL(prev.url);
+                // Never revoke the working url if it's actually originalUrl or
+                // preEnhanceUrl — those are still referenced elsewhere (Results Hub's
+                // "before" image reads originalUrl; revert restores preEnhanceUrl).
+                // After enhance→revert the working url can alias one of them; revoking
+                // it here would dangle that reference (latent sibling of the revert bug).
+                if (prev.url && prev.url !== prev.originalUrl && prev.url !== prev.preEnhanceUrl) {
+                    URL.revokeObjectURL(prev.url);
+                }
                 // The sub-rect of the ORIGINAL that the displayed image currently shows.
                 const region = prev.compositeCropRect
                     ?? { x: 0, y: 0, width: origDims.width, height: origDims.height };

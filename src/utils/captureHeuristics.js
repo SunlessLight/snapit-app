@@ -127,6 +127,101 @@ export function needsClaidEnhance(imageData, naturalDimensions) {
   return { needed: reasons.length > 0, reasons };
 }
 
+// --- Adaptive local enhance (Phase 6.9.1) -----------------------------------
+// The free local pass used to apply a FIXED brightness/contrast/saturation bump,
+// which washed out photos that were already bright or vivid. Instead we MEASURE
+// each property and nudge it toward a neutral "deadzone": a photo already inside
+// the target band is left untouched (slider 50 = no change), one outside is pulled
+// toward the band, and every nudge is CLAMPED so the pass can never wash out or
+// crush. Each property is judged INDEPENDENTLY — no combinatorial lookup table.
+// Sliders are 0-100 with 50 = identity (the same scale createProcessedBlob bakes
+// via slider/50). Tune the bands/clamps below; the logic doesn't change.
+
+// Brightness: mean luminance band (0-255). Outside → pull toward the nearest edge.
+export const LOCAL_BRIGHT_TARGET_LOW = 120;
+export const LOCAL_BRIGHT_TARGET_HIGH = 160;
+export const LOCAL_BRIGHT_SLIDER_MIN = 44;   // ~88%  — gentle pull-down for blown shots
+export const LOCAL_BRIGHT_SLIDER_MAX = 60;   // 120%  — lift for dark shots
+
+// Saturation: mean HSV saturation (0-1). Only ADD pop to flat photos, never desaturate.
+export const LOCAL_SAT_FLAT = 0.25;
+export const LOCAL_SAT_VIVID = 0.45;
+export const LOCAL_SAT_SLIDER_MAX = 58;
+
+// Contrast: luminance standard deviation (0-~80). Only ADD punch to flat photos.
+export const LOCAL_CONTRAST_FLAT = 28;
+export const LOCAL_CONTRAST_PUNCHY = 50;
+export const LOCAL_CONTRAST_SLIDER_MAX = 56;
+
+// Conservative fallback when no ImageData is available (demo image, decode fail):
+// no brightness change, a faint contrast/saturation lift that cannot wash out.
+export const LOCAL_ENHANCE_FALLBACK = { brightness: 50, contrast: 53, saturation: 55 };
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// Mean HSV saturation (0-1). 0 = greyscale, ~0.3-0.5 = typical food shot.
+export function computeSaturation(imageData) {
+  const { data } = imageData;
+  let sum = 0;
+  const n = data.length / 4;
+  for (let i = 0; i < data.length; i += 4) {
+    const max = Math.max(data[i], data[i + 1], data[i + 2]);
+    const min = Math.min(data[i], data[i + 1], data[i + 2]);
+    sum += max === 0 ? 0 : (max - min) / max;
+  }
+  return n === 0 ? 0 : sum / n;
+}
+
+// Global contrast = standard deviation of per-pixel luminance (0-255 scale).
+// Low = flat/hazy, high = punchy. (Distinct from Laplacian variance, which is
+// local edge sharpness, not global tonal spread.)
+export function computeContrast(imageData) {
+  const { data } = imageData;
+  let sum = 0, sumSq = 0;
+  const n = data.length / 4;
+  for (let i = 0; i < data.length; i += 4) {
+    const l = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    sum += l;
+    sumSq += l * l;
+  }
+  if (n === 0) return 0;
+  const mean = sum / n;
+  return Math.sqrt(Math.max(0, sumSq / n - mean * mean));
+}
+
+// Returns { brightness, contrast, saturation } slider values (0-100) tuned to the
+// measured photo. Pure: takes the same downsampled ImageData the cost gate already
+// decoded, no side effects.
+export function recommendLocalEnhance(imageData) {
+  // Brightness — pull toward the [LOW, HIGH] luminance band, else leave at 50.
+  const L = computeLuminance(imageData);
+  let brightness = 50;
+  if (L > 0) {
+    let target = L;
+    if (L < LOCAL_BRIGHT_TARGET_LOW) target = LOCAL_BRIGHT_TARGET_LOW;
+    else if (L > LOCAL_BRIGHT_TARGET_HIGH) target = LOCAL_BRIGHT_TARGET_HIGH;
+    brightness = clamp(Math.round(50 * (target / L)), LOCAL_BRIGHT_SLIDER_MIN, LOCAL_BRIGHT_SLIDER_MAX);
+  }
+
+  // Saturation — only lift flat photos toward vivid; leave already-vivid alone.
+  const S = computeSaturation(imageData);
+  let saturation = 50;
+  if (S < LOCAL_SAT_VIVID) {
+    const t = clamp((LOCAL_SAT_VIVID - S) / (LOCAL_SAT_VIVID - LOCAL_SAT_FLAT), 0, 1);
+    saturation = Math.round(50 + t * (LOCAL_SAT_SLIDER_MAX - 50));
+  }
+
+  // Contrast — only add punch to flat photos; leave already-punchy alone.
+  const C = computeContrast(imageData);
+  let contrast = 50;
+  if (C < LOCAL_CONTRAST_PUNCHY) {
+    const t = clamp((LOCAL_CONTRAST_PUNCHY - C) / (LOCAL_CONTRAST_PUNCHY - LOCAL_CONTRAST_FLAT), 0, 1);
+    contrast = Math.round(50 + t * (LOCAL_CONTRAST_SLIDER_MAX - 50));
+  }
+
+  return { brightness, contrast, saturation };
+}
+
 // Top-level entry: runs all four checks and bucket the keys into hard blocks
 // (modal) and soft warnings (chip). Warning entries carry an i18n key under
 // photoCheck:warnings.* — the caller does the t() lookup.
