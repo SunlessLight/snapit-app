@@ -82,8 +82,12 @@ const createProcessedBlob = (src, mediaState) => {
             ctx.drawImage(img, 0, 0);
             ctx.filter = 'none';
 
-            // Pro: sharpness via JS convolution (portable across browsers)
-            if (isMediaEditorPro && sharpness > 0) {
+            // Sharpness via JS convolution (portable across browsers). NOT Pro-gated:
+            // the Enhance flow seeds a gentle adaptive `sharpness` (the free stand-in
+            // for Claid's removed `polish` op) for every vendor. The slider that exposes
+            // sharpness manually is still Pro-only in the UI, so non-Pro vendors only
+            // ever get the enhance-driven value here.
+            if (sharpness > 0) {
                 const k = sharpness / 100;
                 const kernel = [0, -k, 0, -k, 1 + 4 * k, -k, 0, -k, 0];
                 try {

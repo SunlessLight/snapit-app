@@ -153,9 +153,19 @@ export const LOCAL_CONTRAST_FLAT = 28;
 export const LOCAL_CONTRAST_PUNCHY = 50;
 export const LOCAL_CONTRAST_SLIDER_MAX = 56;
 
+// Sharpness: the free stand-in for Claid's (removed, billed) `polish` op. Scale is
+// 0-100 where 0 = no sharpen (NOT 50-baseline — createProcessedBlob does k = sharpness/100).
+// Keyed on Laplacian variance (local edge sharpness): a crisp photo gets none, a soft
+// one gets a gentle convolution. Kept conservative — over-sharpening reads worse than
+// soft, and this runs on EVERY enhance so it must never look processed.
+export const LOCAL_SHARPEN_CRISP = 150;       // variance ≥ this → no sharpen
+export const LOCAL_SHARPEN_SOFT = 30;         // variance ≤ this → max sharpen
+export const LOCAL_SHARPEN_SLIDER_MAX = 22;   // gentle ceiling on the 0-100 sharpen scale
+
 // Conservative fallback when no ImageData is available (demo image, decode fail):
-// no brightness change, a faint contrast/saturation lift that cannot wash out.
-export const LOCAL_ENHANCE_FALLBACK = { brightness: 50, contrast: 53, saturation: 55 };
+// no brightness change, a faint contrast/saturation lift that cannot wash out, and
+// no sharpen (no pixels to measure → don't guess).
+export const LOCAL_ENHANCE_FALLBACK = { brightness: 50, contrast: 53, saturation: 55, sharpness: 0 };
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
@@ -189,8 +199,9 @@ export function computeContrast(imageData) {
   return Math.sqrt(Math.max(0, sumSq / n - mean * mean));
 }
 
-// Returns { brightness, contrast, saturation } slider values (0-100) tuned to the
-// measured photo. Pure: takes the same downsampled ImageData the cost gate already
+// Returns { brightness, contrast, saturation, sharpness } slider values tuned to the
+// measured photo (brightness/contrast/saturation: 0-100, 50 = identity; sharpness:
+// 0-100, 0 = none). Pure: takes the same downsampled ImageData the cost gate already
 // decoded, no side effects.
 export function recommendLocalEnhance(imageData) {
   // Brightness — pull toward the [LOW, HIGH] luminance band, else leave at 50.
@@ -219,7 +230,16 @@ export function recommendLocalEnhance(imageData) {
     contrast = Math.round(50 + t * (LOCAL_CONTRAST_SLIDER_MAX - 50));
   }
 
-  return { brightness, contrast, saturation };
+  // Sharpness — stand-in for Claid's removed `polish`. Soft photos get a gentle
+  // sharpen; crisp ones get none. 0 = no sharpen (not 50-baseline).
+  const V = computeLaplacianVariance(imageData);
+  let sharpness = 0;
+  if (V < LOCAL_SHARPEN_CRISP) {
+    const t = clamp((LOCAL_SHARPEN_CRISP - V) / (LOCAL_SHARPEN_CRISP - LOCAL_SHARPEN_SOFT), 0, 1);
+    sharpness = Math.round(t * LOCAL_SHARPEN_SLIDER_MAX);
+  }
+
+  return { brightness, contrast, saturation, sharpness };
 }
 
 // Top-level entry: runs all four checks and bucket the keys into hard blocks

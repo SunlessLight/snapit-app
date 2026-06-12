@@ -205,6 +205,9 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
         setMediaState(prev => ({
             ...prev,
             brightness: adj.brightness, contrast: adj.contrast, saturation: adj.saturation,
+            // `sharpness` stands in for Claid's removed `polish` op — baked unconditionally
+            // by createProcessedBlob now (no longer Pro-gated). 0 when no pixels to measure.
+            sharpness: adj.sharpness ?? 0,
             isEnhanced: true,
         }));
     };
@@ -325,6 +328,19 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
             }
 
             const newUrl = URL.createObjectURL(finalBlob);
+            // Claid no longer bakes adjustments (those ops were dropped to save 2 credits),
+            // so seed the per-photo tone/sharpen values the gate already measured and let
+            // createProcessedBlob bake them for free. gateAdjustments was measured on the
+            // pre-upscale original, but upscale doesn't shift exposure/saturation, so the
+            // values still apply to the enhanced blob.
+            const adj = gateAdjustments ?? LOCAL_ENHANCE_FALLBACK;
+            // Cache the prior slider state so the revert click restores BOTH the file and
+            // the sliders (Claid path used to reset to neutral + null the cache; now that
+            // it applies real values, revert must be able to undo them).
+            setCachedValues({
+                b: activeImg.brightness, c: activeImg.contrast, s: activeImg.saturation,
+                h: activeImg.hue, bl: activeImg.blur, sh: activeImg.sharpness, v: activeImg.vignette
+            });
             setMediaState(prev => ({
                 ...prev,
                 file: finalBlob,
@@ -332,12 +348,11 @@ export default function MediaEditorView({ mediaState, setMediaState, onBalanceUp
                 preEnhanceFile: prev.file,
                 preEnhanceUrl: prev.url,
                 isEnhanced: true,
-                // Claid bakes brightness/contrast/saturation. Reset CSS-filter sliders so
-                // any subsequent user tweak is additive, not compounded on top.
-                brightness: 50, contrast: 50, saturation: 50,
-                hue: 50, blur: 0, sharpness: 0, vignette: 0,
+                // Adaptive tone pop + sharpen, baked by createProcessedBlob (replaces the
+                // removed Claid adjustments/polish). hue/blur/vignette stay neutral.
+                brightness: adj.brightness, contrast: adj.contrast, saturation: adj.saturation,
+                hue: 50, blur: 0, sharpness: adj.sharpness ?? 0, vignette: 0,
             }));
-            setCachedValues(null);
         } catch (err) {
             console.error('Claid enhance failed, falling back to local slider-nudge:', err);
             alert(t('mediaEditor:enhance.failed'));
